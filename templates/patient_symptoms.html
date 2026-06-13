@@ -1,0 +1,331 @@
+{% extends "base_patient.html" %}
+{% block title %}AI Symptom Check{% endblock %}
+{% block page_title %}AI Symptom Checker{% endblock %}
+{% block page_subtitle %}Describe your symptoms and get personalized doctor recommendations{% endblock %}
+
+{% block head %}
+<style>
+  .symptom-input {
+    border: 2px solid #E5E7EB; border-radius: 16px;
+    padding: 16px; font-size: 15px; width: 100%;
+    outline: none; resize: none;
+    transition: border-color .2s, box-shadow .2s;
+    font-family: inherit; line-height: 1.6; color: #1F2937;
+    background: white;
+  }
+  .symptom-input:focus { border-color: #22C55E; box-shadow: 0 0 0 4px rgba(34,197,94,.08); }
+
+  .condition-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #EFF6FF; color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    padding: 6px 12px; border-radius: 99px;
+    font-size: 13px; font-weight: 600;
+  }
+
+  .urgency-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 99px;
+    font-size: 13px; font-weight: 700;
+  }
+  .urgency-red    { background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; }
+  .urgency-orange { background:#FFF7ED; color:#C2410C; border:1px solid #FED7AA; }
+  .urgency-yellow { background:#FEFCE8; color:#A16207; border:1px solid #FDE68A; }
+  .urgency-green  { background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; }
+
+  .doc-result-card {
+    border: 1.5px solid #E5E7EB; border-radius: 16px;
+    padding: 16px; background: white;
+    transition: all .2s;
+  }
+  .doc-result-card:hover { border-color: #3B82F6; box-shadow: 0 4px 20px rgba(59,130,246,.1); }
+
+  .result-section {
+    animation: fadeUp .3s ease both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .sample-chip {
+    cursor: pointer; padding: 6px 12px; border-radius: 99px;
+    border: 1px solid #E5E7EB; background: white;
+    font-size: 12px; font-weight: 500; color: #6B7280;
+    transition: all .15s;
+  }
+  .sample-chip:hover { border-color: #22C55E; color: #16A34A; background: #F0FDF4; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Input Card -->
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-5 border-b border-gray-100"
+         style="background:linear-gradient(135deg,#F0FDF4,white)">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#22C55E,#3B82F6)">
+          <i class="fas fa-robot text-white"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-gray-800">Describe Your Symptoms</h2>
+          <p class="text-xs text-gray-400 mt-0.5">AI will suggest the right doctor to visit</p>
+        </div>
+        <span class="ml-auto text-xs font-bold px-2.5 py-1 rounded-lg"
+              style="background:linear-gradient(135deg,#22C55E,#3B82F6);color:white">
+          Powered by Gemini AI
+        </span>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <form action="/portal/symptoms/check" method="post" id="symptom-form">
+        <div class="mb-4">
+          <textarea name="symptoms" id="symptoms-input"
+                    class="symptom-input"
+                    rows="5"
+                    placeholder="Describe your symptoms in detail…&#10;Example: Fever since 2 days, severe headache, body pain, feeling tired, no appetite"
+                    required>{{ symptoms_input or '' }}</textarea>
+          <p class="text-xs text-gray-400 mt-2">
+            <i class="fas fa-shield-alt text-green-500 mr-1"></i>
+            Your symptoms are analyzed privately and not stored.
+          </p>
+        </div>
+
+        <!-- Sample symptoms -->
+        <div class="mb-5">
+          <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Quick examples — click to fill:</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="sample-chip" onclick="fillSample('Fever, headache, body pain, fatigue for 3 days')">
+              <i class="fas fa-thermometer-half mr-1 text-orange-400"></i>Fever + Headache
+            </span>
+            <span class="sample-chip" onclick="fillSample('Chest pain, shortness of breath, heart palpitations')">
+              <i class="fas fa-heart mr-1 text-red-400"></i>Chest Pain
+            </span>
+            <span class="sample-chip" onclick="fillSample('Knee pain, joint stiffness, difficulty walking')">
+              <i class="fas fa-bone mr-1 text-amber-400"></i>Joint Pain
+            </span>
+            <span class="sample-chip" onclick="fillSample('Skin rash, itching, redness on arms for a week')">
+              <i class="fas fa-allergies mr-1 text-yellow-500"></i>Skin Rash
+            </span>
+            <span class="sample-chip" onclick="fillSample('Anxiety, depression, trouble sleeping, stress')">
+              <i class="fas fa-brain mr-1 text-purple-400"></i>Mental Health
+            </span>
+            <span class="sample-chip" onclick="fillSample('Child has high fever, cough, runny nose, age 5')">
+              <i class="fas fa-baby mr-1 text-green-400"></i>Child's Fever
+            </span>
+          </div>
+        </div>
+
+        <button type="submit" id="submit-btn"
+                class="w-full py-3.5 rounded-xl font-bold text-white text-sm border-none cursor-pointer
+                       flex items-center justify-center gap-2 transition"
+                style="background:linear-gradient(135deg,#22C55E,#3B82F6);
+                       box-shadow:0 4px 20px rgba(34,197,94,.3)">
+          <i class="fas fa-search-plus"></i>
+          Analyze Symptoms &amp; Find Doctor
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Results ───────────────────────────────────────────── -->
+  {% if result %}
+  <div class="result-section space-y-5">
+
+    <!-- Emergency Banner -->
+    {% if result.emergency %}
+    <div class="rounded-2xl p-5 flex items-start gap-4"
+         style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border:2px solid #FCA5A5">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background:#EF4444">
+        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-red-700 text-lg">Emergency — Seek Immediate Help!</h3>
+        <p class="text-red-600 text-sm mt-1">
+          Your symptoms suggest a potentially life-threatening condition.
+          Go to the nearest emergency room or call <strong>112</strong> immediately.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Result Card -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3"
+           style="background:linear-gradient(135deg,#EFF6FF,white)">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-check-circle text-green-500"></i>
+          <span class="font-bold text-gray-800">AI Analysis Complete</span>
+        </div>
+        {% set uc = result.urgency_color or 'orange' %}
+        <span class="urgency-badge urgency-{{ uc }}">
+          {% if uc == 'red' %}<i class="fas fa-exclamation-circle"></i>
+          {% elif uc == 'orange' %}<i class="fas fa-clock"></i>
+          {% elif uc == 'yellow' %}<i class="fas fa-info-circle"></i>
+          {% else %}<i class="fas fa-check-circle"></i>{% endif %}
+          {{ result.urgency }}
+        </span>
+      </div>
+
+      <div class="p-6 space-y-6">
+
+        <!-- Possible Conditions -->
+        <div>
+          <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="fas fa-list-ul text-blue-500"></i>Possible Conditions
+          </h4>
+          <div class="flex flex-wrap gap-2">
+            {% for condition in result.possible_conditions %}
+            <span class="condition-chip">
+              <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold
+                           flex items-center justify-center flex-shrink-0">{{ loop.index }}</span>
+              {{ condition }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Suggested Specialist -->
+        <div class="rounded-2xl p-4 border-2 border-green-200"
+             style="background:linear-gradient(135deg,#F0FDF4,white)">
+          <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <i class="fas fa-user-md text-green-600"></i>Recommended Specialist
+          </h4>
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+              <i class="fas fa-user-md text-white text-xl"></i>
+            </div>
+            <div>
+              <div class="text-xl font-black text-green-800">{{ result.suggested_specialty }}</div>
+              <p class="text-sm text-gray-600 mt-0.5">{{ result.explanation }}</p>
+              {% if result.also_consider %}
+              <p class="text-xs text-gray-400 mt-1">
+                <i class="fas fa-info-circle mr-1"></i>
+                Also consider: <strong>{{ result.also_consider }}</strong>
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Home Care & Warning Signs side by side -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {% if result.home_care %}
+          <div class="p-4 rounded-xl bg-green-50 border border-green-100">
+            <h4 class="text-xs font-bold text-green-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+              <i class="fas fa-home"></i>Home Care Tips
+            </h4>
+            <ul class="space-y-1">
+              {% for tip in result.home_care %}
+              <li class="text-xs text-green-800 flex items-start gap-2">
+                <i class="fas fa-check text-green-500 mt-0.5 flex-shrink-0"></i>{{ tip }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+          {% if result.warning_signs %}
+          <div class="p-4 rounded-xl bg-red-50 border border-red-100">
+            <h4 class="text-xs font-bold text-red-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+              <i class="fas fa-exclamation-triangle"></i>Seek Help If
+            </h4>
+            <ul class="space-y-1">
+              {% for sign in result.warning_signs %}
+              <li class="text-xs text-red-700 flex items-start gap-2">
+                <i class="fas fa-times text-red-400 mt-0.5 flex-shrink-0"></i>{{ sign }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- /p-6 -->
+    </div><!-- /main result card -->
+
+    <!-- Available Doctors -->
+    {% if suggested_doctors %}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100"
+           style="background:linear-gradient(135deg,#EFF6FF,white)">
+        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-user-md text-blue-500"></i>
+          Available {{ result.suggested_specialty }}s at GramCare
+        </h3>
+        <p class="text-xs text-gray-400 mt-0.5">Click "Book" to schedule an appointment</p>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% for doc in suggested_doctors %}
+        <div class="doc-result-card">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
+                 style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+              {{ doc.name.split()[1][0] if doc.name.split()|length > 1 else doc.name[0] }}{{ doc.name.split()[2][0] if doc.name.split()|length > 2 else '' }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-gray-800 text-sm">{{ doc.name }}</div>
+              <div class="text-xs text-blue-600 font-medium">{{ doc.specialization }}</div>
+              <div class="text-xs text-gray-400">{{ doc.qualifications }} · {{ doc.experience }}</div>
+            </div>
+          </div>
+          {% if doc.bio %}
+          <p class="text-xs text-gray-500 mb-3 leading-relaxed">{{ doc.bio }}</p>
+          {% endif %}
+          <a href="/portal/appointments?specialty={{ result.suggested_specialty | urlencode }}&doctor_id={{ doc.id }}"
+             class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-white
+                    transition hover:opacity-90"
+             style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+            <i class="fas fa-calendar-plus"></i>Book with {{ doc.name.split()[1] if doc.name.split()|length > 1 else doc.name }}
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
+      <i class="fas fa-user-md text-4xl text-gray-300 block mb-2"></i>
+      <p class="text-gray-500 font-medium mb-1">No {{ result.suggested_specialty }} available right now</p>
+      <p class="text-sm text-gray-400 mb-4">You can still book with a General Physician</p>
+      <a href="/portal/appointments?specialty=General+Physician"
+         class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+         style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+        <i class="fas fa-calendar-plus"></i>Book Appointment
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Disclaimer -->
+    <div class="p-4 rounded-xl bg-amber-50 border border-amber-100">
+      <p class="text-xs text-amber-700">
+        <i class="fas fa-info-circle mr-1"></i>
+        <strong>Disclaimer:</strong> This AI analysis is for guidance only and does not replace a professional medical consultation.
+        Always consult a qualified doctor for diagnosis and treatment.
+      </p>
+    </div>
+
+  </div><!-- /results -->
+  {% endif %}
+
+</div><!-- /max-w-3xl -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillSample(text) {
+  document.getElementById('symptoms-input').value = text;
+  document.getElementById('symptoms-input').focus();
+}
+
+document.getElementById('symptom-form').addEventListener('submit', function() {
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing with AI…';
+  btn.disabled = true;
+  btn.style.opacity = '0.8';
+});
+</script>
+{% endblock %}

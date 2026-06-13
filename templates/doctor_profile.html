@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}Doctor Profile{% endblock %}
+{% block page_title %}Doctor Profile{% endblock %}
+{% block page_subtitle %}View and update your professional information{% endblock %}
+
+{% block head %}
+<style>
+  .profile-input {
+    width: 100%; padding: 10px 14px; border: 1.5px solid #E2E8F0;
+    border-radius: 10px; font-size: 14px; outline: none;
+    transition: border-color .2s, box-shadow .2s; background: white; color: #1F2937;
+  }
+  .profile-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+  .section-label {
+    display: block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: #6B7280; margin-bottom: 6px;
+  }
+  .day-pill {
+    padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+    border: 1.5px solid #E2E8F0; cursor: pointer; transition: all .15s;
+    background: white; color: #9CA3AF;
+  }
+  .day-pill.active { background: #EFF6FF; border-color: #3B82F6; color: #2563EB; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation: fadeUp .35s ease-out both; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-2 py-4">
+
+  <!-- Alerts -->
+  {% if success %}
+  <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm fade-up">
+    <i class="fas fa-check-circle text-green-500"></i>{{ success }}
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm fade-up">
+    <i class="fas fa-exclamation-circle text-red-500"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- ── Left Column: Profile Card ──────────────────────── -->
+    <div class="lg:col-span-1 space-y-4 fade-up">
+
+      <!-- Avatar Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Cover gradient -->
+        <div class="h-20" style="background:linear-gradient(135deg,#1D4ED8,#3B82F6,#06B6D4)"></div>
+        <!-- Avatar -->
+        <div class="px-5 pb-5 -mt-10">
+          <div class="w-20 h-20 rounded-2xl border-4 border-white flex items-center justify-center text-3xl font-black text-white mb-3 shadow-md"
+               style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+            {{ (doctor.name or 'D')[0] }}
+          </div>
+          <div class="font-black text-gray-800 text-lg leading-tight">{{ doctor.name or 'Doctor' }}</div>
+          <div class="text-blue-600 font-semibold text-sm mt-0.5">{{ doctor.specialization or 'General Physician' }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">{{ doctor.qualifications or 'MBBS' }}</div>
+
+          <!-- Rating placeholder -->
+          <div class="flex items-center gap-2 mt-3">
+            <div class="flex gap-0.5">
+              <i class="fas fa-star text-yellow-400 text-xs"></i>
+              <i class="fas fa-star text-yellow-400 text-xs"></i>
+              <i class="fas fa-star text-yellow-400 text-xs"></i>
+              <i class="fas fa-star text-yellow-400 text-xs"></i>
+              <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
+            </div>
+            <span class="text-xs font-bold text-gray-700">4.8</span>
+            <span class="text-xs text-gray-400">/ 5.0</span>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+            {% if doctor.reg_number %}
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <i class="fas fa-id-badge text-blue-400 w-4 text-center"></i>Reg: {{ doctor.reg_number }}
+            </div>
+            {% endif %}
+            {% if doctor.experience %}
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <i class="fas fa-briefcase-medical text-green-400 w-4 text-center"></i>{{ doctor.experience }} experience
+            </div>
+            {% endif %}
+            {% if doctor.phone %}
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <i class="fas fa-phone text-purple-400 w-4 text-center"></i>{{ doctor.phone }}
+            </div>
+            {% endif %}
+            {% if doctor.email %}
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <i class="fas fa-envelope text-red-400 w-4 text-center"></i>{{ doctor.email }}
+            </div>
+            {% endif %}
+            {% if doctor.clinic_name %}
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <i class="fas fa-hospital text-teal-400 w-4 text-center"></i>{{ doctor.clinic_name }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+          <i class="fas fa-chart-bar text-blue-400 mr-1"></i>Practice Stats
+        </h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-green-50">
+            <span class="text-xs text-gray-600 flex items-center gap-1.5">
+              <i class="fas fa-users text-green-500"></i>Total Patients
+            </span>
+            <span class="text-sm font-black text-gray-800">{{ total_patients }}</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-blue-50">
+            <span class="text-xs text-gray-600 flex items-center gap-1.5">
+              <i class="fas fa-calendar-check text-blue-500"></i>Appointments
+            </span>
+            <span class="text-sm font-black text-gray-800">{{ total_appointments }}</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-purple-50">
+            <span class="text-xs text-gray-600 flex items-center gap-1.5">
+              <i class="fas fa-stethoscope text-purple-500"></i>Consultations
+            </span>
+            <span class="text-sm font-black text-gray-800">{{ total_consultations }}</span>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-gray-400 text-center">
+          Member since {{ doctor.created_at[:7] if doctor.created_at else '2025' }}
+        </div>
+      </div>
+
+      <!-- Languages Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+          <i class="fas fa-language text-indigo-400 mr-1"></i>Languages
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          {% set langs = (doctor.languages or 'Hindi,English').split(',') %}
+          {% for lang in langs %}
+          <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full border border-indigo-200">
+            {{ lang.strip() }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right Column: Edit Form ──────────────────────── -->
+    <div class="lg:col-span-2 fade-up" style="animation-delay:.1s">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Tab header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2"
+             style="background:linear-gradient(135deg,#EFF6FF,white)">
+          <i class="fas fa-edit text-blue-500"></i>
+          <h3 class="font-bold text-gray-800">Edit Profile</h3>
+        </div>
+
+        <form action="/auth/doctor-profile/update" method="post" class="p-6 space-y-6">
+
+          <!-- Personal Info -->
+          <div>
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-user text-blue-600 text-xs"></i>
+              </span>
+              Personal Information
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="section-label">Full Name</label>
+                <input name="name" type="text" required class="profile-input" value="{{ doctor.name or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Specialization</label>
+                <input name="specialization" type="text" class="profile-input" value="{{ doctor.specialization or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Qualifications (MBBS, MD…)</label>
+                <input name="qualifications" type="text" class="profile-input" value="{{ doctor.qualifications or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Years of Experience</label>
+                <input name="experience" type="text" class="profile-input" placeholder="e.g. 12 years" value="{{ doctor.experience or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Registration Number</label>
+                <input name="reg_number" type="text" class="profile-input" value="{{ doctor.reg_number or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Phone</label>
+                <input name="phone" type="tel" class="profile-input" value="{{ doctor.phone or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Email</label>
+                <input name="email" type="email" class="profile-input" value="{{ doctor.email or '' }}"/>
+              </div>
+              <div class="md:col-span-2">
+                <label class="section-label">Bio / About</label>
+                <textarea name="bio" rows="3" class="profile-input resize-none" placeholder="Brief professional background…">{{ doctor.bio or '' }}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clinic Info -->
+          <div class="pt-4 border-t border-gray-100">
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-teal-100 flex items-center justify-center">
+                <i class="fas fa-hospital text-teal-600 text-xs"></i>
+              </span>
+              Clinic Information
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="section-label">Clinic Name</label>
+                <input name="clinic_name" type="text" class="profile-input" value="{{ doctor.clinic_name or '' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Clinic Phone</label>
+                <input name="clinic_phone" type="tel" class="profile-input" value="{{ doctor.clinic_phone or '' }}"/>
+              </div>
+              <div class="md:col-span-2">
+                <label class="section-label">Clinic Address</label>
+                <input name="clinic_address" type="text" class="profile-input" value="{{ doctor.clinic_address or '' }}"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Working Hours -->
+          <div class="pt-4 border-t border-gray-100">
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-amber-100 flex items-center justify-center">
+                <i class="fas fa-clock text-amber-600 text-xs"></i>
+              </span>
+              Working Hours
+            </h4>
+            <!-- Day pills -->
+            <div class="mb-3">
+              <label class="section-label">Available Days</label>
+              <div class="flex flex-wrap gap-2" id="day-pills">
+                {% set avail_days = (doctor.available_days or 'Mon,Tue,Wed,Thu,Fri,Sat').split(',') %}
+                {% for day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                <button type="button"
+                        class="day-pill {% if day in avail_days %}active{% endif %}"
+                        data-day="{{ day }}"
+                        onclick="toggleDay(this)">{{ day }}</button>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="available_days" id="available_days_input"
+                     value="{{ doctor.available_days or 'Mon,Tue,Wed,Thu,Fri,Sat' }}"/>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="section-label">Morning Start</label>
+                <input name="work_start" type="time" class="profile-input" value="{{ doctor.work_start or '09:00' }}"/>
+              </div>
+              <div>
+                <label class="section-label">Evening End</label>
+                <input name="work_end" type="time" class="profile-input" value="{{ doctor.work_end or '18:00' }}"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Languages -->
+          <div class="pt-4 border-t border-gray-100">
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-indigo-100 flex items-center justify-center">
+                <i class="fas fa-language text-indigo-600 text-xs"></i>
+              </span>
+              Languages Spoken
+            </h4>
+            <div>
+              <label class="section-label">Languages (comma-separated)</label>
+              <input name="languages" type="text" class="profile-input"
+                     placeholder="Hindi, English, Tamil…"
+                     value="{{ doctor.languages or 'Hindi, English' }}"/>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="pt-4 border-t border-gray-100">
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-yellow-100 flex items-center justify-center">
+                <i class="fas fa-key text-yellow-600 text-xs"></i>
+              </span>
+              Change Password <span class="text-gray-400 font-normal text-xs">(optional)</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="section-label">New Password</label>
+                <input name="new_password" type="password" minlength="6" class="profile-input"
+                       placeholder="Leave blank to keep current"/>
+              </div>
+              <div>
+                <label class="section-label">Confirm New Password</label>
+                <input name="confirm_password" type="password" minlength="6" class="profile-input"
+                       placeholder="Repeat new password"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Availability Calendar placeholder -->
+          <div class="pt-4 border-t border-gray-100">
+            <h4 class="text-sm font-black text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 rounded bg-green-100 flex items-center justify-center">
+                <i class="fas fa-calendar-alt text-green-600 text-xs"></i>
+              </span>
+              Availability Overview
+            </h4>
+            <div class="rounded-xl p-4 border border-gray-100 bg-gray-50">
+              <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                <div class="font-bold text-gray-500 py-1">{{ d }}</div>
+                {% endfor %}
+                {% set avail = (doctor.available_days or 'Mon,Tue,Wed,Thu,Fri,Sat').split(',') %}
+                {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                <div class="rounded-lg py-2 font-semibold
+                     {% if d.strip() in avail %}bg-green-100 text-green-700{% else %}bg-gray-200 text-gray-400{% endif %}">
+                  {% if d.strip() in avail %}<i class="fas fa-check text-[10px]"></i>{% else %}—{% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              <p class="text-xs text-gray-400 text-center mt-2">
+                Hours: {{ doctor.work_start or '09:00' }} – {{ doctor.work_end or '18:00' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="flex justify-end gap-3 pt-2">
+            <a href="/dashboard" class="btn-secondary">
+              <i class="fas fa-arrow-left mr-1"></i>Cancel
+            </a>
+            <button type="submit"
+                    class="px-7 py-2.5 rounded-xl font-bold text-white text-sm cursor-pointer border-none transition"
+                    style="background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 4px 14px rgba(59,130,246,.3);"
+                    onmouseover="this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.transform='translateY(0)'">
+              <i class="fas fa-save mr-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleDay(btn) {
+  btn.classList.toggle('active');
+  const active = [...document.querySelectorAll('.day-pill.active')].map(b => b.dataset.day);
+  document.getElementById('available_days_input').value = active.join(',');
+}
+</script>
+{% endblock %}

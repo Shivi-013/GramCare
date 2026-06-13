@@ -1,0 +1,105 @@
+{% extends "base_patient.html" %}
+{% block title %}My Medicines{% endblock %}
+{% block page_title %}My Medicines{% endblock %}
+{% block page_subtitle %}Prescriptions from your consultations{% endblock %}
+
+{% block content %}
+
+{% if not consultations %}
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+  <div class="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-4">
+    <i class="fas fa-pills text-purple-300 text-2xl"></i>
+  </div>
+  <h3 class="text-lg font-semibold text-gray-700 mb-2">No prescriptions yet</h3>
+  <p class="text-sm text-gray-400 max-w-xs mx-auto">
+    After your doctor completes a consultation, your medicines and prescriptions will appear here.
+  </p>
+  <a href="/portal/appointments"
+     class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:underline">
+    <i class="fas fa-calendar-plus"></i>Book an appointment
+  </a>
+</div>
+{% else %}
+
+<div class="space-y-5">
+  {% for consult in consultations %}
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <!-- Consultation header -->
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between"
+         style="background:linear-gradient(135deg,#FAF5FF,white)">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+          <i class="fas fa-stethoscope text-purple-500"></i>
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-800">{{ consult.diagnosis or 'Consultation' }}</div>
+          <div class="text-xs text-gray-400">{{ consult.date }} • {{ consult.doctor or consult.doctor_name or 'Doctor' }}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if consult.id %}
+        <a href="/reports/prescription/{{ consult.id }}"
+           class="flex items-center gap-1.5 text-xs font-semibold text-purple-600 border border-purple-200
+                  bg-purple-50 rounded-lg px-3 py-1.5 hover:bg-purple-100 transition">
+          <i class="fas fa-file-pdf"></i>PDF
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Symptoms & Notes -->
+    <div class="px-5 py-3 bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      {% if consult.symptoms %}
+      <div>
+        <span class="text-xs text-gray-400 uppercase tracking-wide">Symptoms</span>
+        <p class="text-gray-700 mt-0.5">{{ consult.symptoms }}</p>
+      </div>
+      {% endif %}
+      {% if consult.notes %}
+      <div>
+        <span class="text-xs text-gray-400 uppercase tracking-wide">Doctor's Notes</span>
+        <p class="text-gray-700 mt-0.5">{{ consult.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Prescription -->
+    {% set med_list = consult.medicines or consult.prescription %}
+    {% if med_list %}
+    <div class="p-5">
+      <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        <i class="fas fa-prescription-bottle-alt mr-1 text-green-500"></i>Prescribed Medicines
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for med in med_list %}
+        <div class="flex items-start gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
+          <div class="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-pills text-green-600 text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            {% if med is mapping %}
+            <div class="text-sm font-bold text-gray-800">{{ med.medicine or med.name }}</div>
+            {% if med.dosage %}<div class="text-xs text-gray-500 mt-0.5">{{ med.dosage }}</div>{% endif %}
+            {% if med.frequency %}<div class="text-xs text-green-700 mt-1"><i class="fas fa-redo text-xs mr-1"></i>{{ med.frequency }}</div>{% endif %}
+            {% if med.duration %}<div class="text-xs text-gray-400 mt-0.5"><i class="fas fa-clock text-xs mr-1"></i>{{ med.duration }}</div>{% endif %}
+            {% else %}
+            <div class="text-sm font-bold text-gray-800">{{ med }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">As prescribed by your doctor</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="px-5 py-4 text-sm text-gray-400 italic">
+      No medicines prescribed in this consultation.
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

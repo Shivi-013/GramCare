@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Consultations{% endblock %}
+{% block page_title %}Consultation Notes{% endblock %}
+{% block page_subtitle %}Record and manage patient consultation notes{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-3">
+    <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center">
+      <i class="fas fa-stethoscope text-purple-600 text-xl"></i>
+    </div>
+    <div>
+      <h2 class="text-xl font-bold text-gray-800">All Consultations</h2>
+      <p class="text-sm text-gray-400">{{ consultations|length }} records total</p>
+    </div>
+  </div>
+  <button onclick="openModal('addConsultModal')" class="btn-primary">
+    <i class="fas fa-plus"></i> New Consultation
+  </button>
+</div>
+
+<div class="grid grid-cols-1 gap-4">
+  {% for c in consultations %}
+  <div class="card p-5 hover:shadow-lg transition-all duration-200">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex items-start gap-4 flex-1">
+        <div class="avatar w-11 h-11 flex-shrink-0"
+          style="background:linear-gradient(135deg,hsl({{ loop.index * 60 % 360 }},55%,45%),hsl({{ (loop.index * 60 + 40) % 360 }},55%,55%))">
+          {{ c.patient_name[0] }}
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-bold text-gray-800">{{ c.patient_name }}</h3>
+            <span class="badge badge-purple">
+              <i class="fas fa-virus text-xs"></i> {{ c.diagnosis }}
+            </span>
+            <span class="badge badge-green">{{ c.status }}</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">
+            <i class="fas fa-user-md text-blue-400 mr-1"></i>{{ c.doctor }}
+            {% if c.doctor_specialization %}
+            <span class="text-xs text-blue-400 ml-1">({{ c.doctor_specialization }})</span>
+            {% endif %}
+            <span class="mx-2 text-gray-300">·</span>
+            <i class="fas fa-calendar text-gray-300 mr-1"></i>{{ c.date }}
+            {% if c.follow_up_date %}
+            <span class="mx-2 text-gray-300">·</span>
+            <i class="fas fa-calendar-alt text-green-400 mr-1"></i>Follow-up: {{ c.follow_up_date }}
+            {% endif %}
+          </p>
+          <div class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Symptoms: </span>
+            {{ c.symptoms }}
+          </div>
+          {% if c.notes %}
+          <p class="text-sm text-gray-600 mt-2 leading-relaxed">
+            <i class="fas fa-notes-medical text-purple-400 mr-1"></i>{{ c.notes }}
+          </p>
+          {% endif %}
+          {% if c.recommended_tests %}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            <span class="text-xs font-semibold text-yellow-600 mr-1">Tests:</span>
+            {% for t in c.recommended_tests %}
+            <span class="badge text-xs" style="background:#FEF3C7;color:#92400E">
+              <i class="fas fa-flask text-xs"></i> {{ t }}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if c.medicines %}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {% for med in c.medicines %}
+            <span class="badge badge-blue text-xs"><i class="fas fa-pills text-xs"></i> {{ med }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex flex-col gap-2 flex-shrink-0">
+        <a href="/consultations/{{ c.id }}" class="btn-secondary text-xs py-1.5 px-3">
+          <i class="fas fa-eye"></i> View
+        </a>
+        <form action="/reports/prescription" method="post">
+          <input type="hidden" name="patient_id" value="{{ c.patient_id }}"/>
+          <input type="hidden" name="doctor" value="{{ c.doctor }}"/>
+          <input type="hidden" name="diagnosis" value="{{ c.diagnosis }}"/>
+          <input type="hidden" name="medicines" value="{{ c.medicines|join(', ') }}"/>
+          <input type="hidden" name="instructions" value="{{ c.notes }}"/>
+          <input type="hidden" name="consultation_id" value="{{ c.id }}"/>
+          <button class="btn-primary text-xs py-1.5 px-3 w-full">
+            <i class="fas fa-file-pdf"></i> Rx PDF
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card p-16 text-center">
+    <i class="fas fa-notes-medical text-5xl text-gray-200 mb-4 block"></i>
+    <h3 class="text-lg font-semibold text-gray-500">No consultations recorded</h3>
+    <p class="text-gray-400 mt-2 mb-5">Start documenting patient consultations</p>
+    <button onclick="openModal('addConsultModal')" class="btn-primary">
+      <i class="fas fa-plus"></i> Add First Consultation
+    </button>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Add Consultation Modal ─────────────────────────────────── -->
+<div id="addConsultModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-stethoscope text-purple-500"></i> New Consultation Note
+      </h3>
+      <button onclick="closeModal('addConsultModal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form action="/consultations/add" method="post" class="modal-body" data-loading>
+      <div class="space-y-4">
+
+        <!-- Doctor pill (read-only) -->
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+          <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user-md text-blue-600"></i>
+          </div>
+          <div>
+            <div class="text-xs text-blue-400 font-semibold uppercase tracking-wide">Consulting Doctor</div>
+            <div class="font-bold text-blue-800">{{ doctor.name }}</div>
+            <div class="text-xs text-blue-500">{{ doctor.specialization }}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label"><i class="fas fa-user mr-1 text-green-500"></i> Patient *</label>
+            <select name="patient_id" id="consult-patient" required class="form-input">
+              <option value="" disabled selected>Select patient</option>
+              {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.name }} ({{ p.age }}y)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label"><i class="fas fa-calendar-check mr-1 text-purple-500"></i> Linked Appointment</label>
+            <select name="appointment_id" class="form-input" onchange="prefillFromAppt(this)">
+              <option value="">— None / Walk-in —</option>
+              {% for a in appointments %}
+              <option value="{{ a.id }}"
+                      data-patient="{{ a.patient_id }}"
+                      data-symptoms="{{ a.symptoms or '' }}">
+                {{ a.patient_name }} · {{ a.date }} {{ a.time }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label"><i class="fas fa-thermometer mr-1 text-red-500"></i> Symptoms *</label>
+          <textarea name="symptoms" id="consult-symptoms" rows="2" required class="form-input"
+                    placeholder="Chief complaints and symptoms..."></textarea>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-virus mr-1 text-purple-500"></i> Diagnosis *</label>
+          <input name="diagnosis" type="text" required class="form-input" placeholder="Primary diagnosis"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-clipboard mr-1 text-gray-500"></i> Clinical Notes *</label>
+          <textarea name="notes" rows="3" required class="form-input"
+                    placeholder="Detailed clinical notes, observations, recommendations..."></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label"><i class="fas fa-pills mr-1 text-blue-500"></i> Medicines</label>
+            <input name="medicines" type="text" class="form-input"
+                   placeholder="Paracetamol 500mg TDS, ORS sachets"/>
+            <p class="text-xs text-gray-400 mt-1">Separate with commas</p>
+          </div>
+          <div>
+            <label class="form-label"><i class="fas fa-flask mr-1 text-yellow-500"></i> Recommended Tests</label>
+            <input name="recommended_tests" type="text" class="form-input"
+                   placeholder="CBC, X-Ray, ECG"/>
+          </div>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-calendar-alt mr-1 text-green-500"></i> Follow-up Date</label>
+          <input name="follow_up_date" type="date" class="form-input"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addConsultModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Consultation</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function prefillFromAppt(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const pid = opt.dataset.patient;
+  const sym = opt.dataset.symptoms;
+  if (pid) {
+    const patSel = document.getElementById('consult-patient');
+    for (let o of patSel.options) { if (o.value === pid) { patSel.value = pid; break; } }
+  }
+  if (sym) { document.getElementById('consult-symptoms').value = sym; }
+}
+</script>
+{% endblock %}

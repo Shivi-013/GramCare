@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GramCare – Smart Telemedicine for Rural India</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+
+    .hero-bg { background: linear-gradient(135deg,#0F172A 0%,#0C1E3E 45%,#072217 100%); }
+    .hero-glow { background: radial-gradient(ellipse 70% 55% at 50% -5%, rgba(34,197,94,.18) 0%, transparent 65%); }
+
+    @keyframes float      { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-14px)} }
+    @keyframes floatSlow  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-8px)}  }
+    @keyframes fadeUp     { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes pulseRing  { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)} 60%{box-shadow:0 0 0 14px rgba(34,197,94,0)} }
+    @keyframes heartbeat  { 0%,100%{transform:scale(1)} 40%{transform:scale(1.18)} 60%{transform:scale(1)} }
+    @keyframes shimmer    { 0%{background-position:-200% center} 100%{background-position:200% center} }
+
+    .float       { animation: float     6s ease-in-out infinite; }
+    .float-slow  { animation: floatSlow 9s ease-in-out infinite; }
+    .fade-up     { animation: fadeUp    .7s ease-out both; }
+    .pulse-ring  { animation: pulseRing 2.2s ease-in-out infinite; }
+    .heartbeat   { animation: heartbeat 1.4s ease-in-out infinite; }
+
+    .gradient-text {
+      background: linear-gradient(135deg,#22C55E,#3B82F6,#8B5CF6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-size: 200% 200%; animation: shimmer 4s linear infinite;
+    }
+    .glass {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-val {
+      font-size: 2.6rem; font-weight: 900;
+      background: linear-gradient(135deg,#22C55E,#3B82F6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .step-connector {
+      width: 2px; background: linear-gradient(180deg,#22C55E,#3B82F6); flex-shrink: 0;
+    }
+    .faq-item details summary { cursor: pointer; }
+    .faq-item details[open] summary { color: #22C55E; }
+
+    /* Nav scroll effect */
+    .nav-scrolled { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      .role-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body class="bg-white overflow-x-hidden">
+
+<!-- ── Navbar ──────────────────────────────────────────────────── -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2.5 no-underline">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#22C55E,#3B82F6)">
+          <i class="fas fa-heartbeat text-white text-base heartbeat"></i>
+        </div>
+        <span class="font-black text-xl text-gray-900">Gram<span class="text-green-500">Care</span></span>
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+        <a href="#how-it-works" class="hover:text-green-600 transition">How It Works</a>
+        <a href="#features"     class="hover:text-green-600 transition">Features</a>
+        <a href="#for-patients" class="hover:text-green-600 transition">For Patients</a>
+        <a href="#faq"          class="hover:text-green-600 transition">FAQ</a>
+      </div>
+
+      <!-- Auth buttons -->
+      <div class="flex items-center gap-2">
+        <a href="/auth/login?role=patient"
+           class="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-green-600
+                  border border-green-200 bg-green-50 hover:bg-green-100 rounded-xl px-4 py-2 transition">
+          <i class="fas fa-user"></i>Patient
+        </a>
+        <a href="/auth/login?role=doctor"
+           class="flex items-center gap-1.5 text-sm font-semibold text-white rounded-xl px-4 py-2 transition"
+           style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+          <i class="fas fa-user-md"></i>Doctor
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════
+     HERO SECTION
+═══════════════════════════════════════════════════════════════ -->
+<section class="hero-bg min-h-screen flex items-center pt-16 relative overflow-hidden">
+  <div class="hero-glow absolute inset-0 pointer-events-none"></div>
+
+  <!-- Decorative circles -->
+  <div class="absolute top-24 right-8 w-64 h-64 rounded-full pointer-events-none"
+       style="background:radial-gradient(circle,rgba(59,130,246,.08),transparent)"></div>
+  <div class="absolute bottom-16 left-8 w-48 h-48 rounded-full pointer-events-none"
+       style="background:radial-gradient(circle,rgba(34,197,94,.07),transparent)"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+
+    <!-- ── TOP: headline left + illustration right ──────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center mb-14">
+
+      <!-- Left: label, headline, subtitle, stats -->
+      <div class="fade-up" style="animation-delay:.1s">
+        <div class="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/25
+                    text-green-400 rounded-full px-4 py-1.5 text-xs font-semibold mb-6">
+          <span class="w-2 h-2 bg-green-400 rounded-full pulse-ring inline-block"></span>
+          AI-Powered Telemedicine · ग्रामीण भारत के लिए
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-5">
+          Quality Healthcare<br/>
+          <span class="gradient-text">for Every Village</span>
+        </h1>
+        <p class="text-base text-slate-400 leading-relaxed mb-10 max-w-lg">
+          GramCare connects rural patients with doctors through AI-assisted telemedicine.
+          Book appointments, get prescriptions, track medicines — all offline-first.
+        </p>
+
+        <!-- Stats inline -->
+        <div class="grid grid-cols-3 gap-0 max-w-xs mb-8">
+          <div class="text-center">
+            <div class="stat-val" style="font-size:2rem">50K+</div>
+            <div class="text-slate-400 text-xs mt-0.5">Patients</div>
+          </div>
+          <div class="text-center border-x border-white/10">
+            <div class="stat-val" style="font-size:2rem">98%</div>
+            <div class="text-slate-400 text-xs mt-0.5">AI Accuracy</div>
+          </div>
+          <div class="text-center">
+            <div class="stat-val" style="font-size:2rem">4</div>
+            <div class="text-slate-400 text-xs mt-0.5">Languages</div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex flex-wrap gap-3 mb-5">
+          <a href="/auth/login?role=doctor"
+             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition hover:-translate-y-0.5"
+             style="background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 4px 18px rgba(59,130,246,.4)">
+            <i class="fas fa-user-md"></i>Doctor Login
+          </a>
+          <a href="/auth/login?role=patient"
+             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition hover:-translate-y-0.5"
+             style="background:linear-gradient(135deg,#22C55E,#16A34A);box-shadow:0 4px 18px rgba(34,197,94,.4)">
+            <i class="fas fa-user"></i>Patient Login
+          </a>
+          <a href="/auth/register"
+             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-green-300
+                    border border-green-400/30 hover:bg-green-400/10 hover:text-green-200 transition">
+            <i class="fas fa-user-plus"></i>Register Free
+          </a>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="flex flex-wrap gap-4">
+          <div class="flex items-center gap-1.5 text-slate-400 text-xs">
+            <i class="fas fa-lock text-green-500"></i><span>Encrypted & Secure</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-400 text-xs">
+            <i class="fas fa-wifi-slash text-blue-400"></i><span>Works Offline</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-400 text-xs">
+            <i class="fas fa-language text-purple-400"></i><span>4 Languages</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: illustration -->
+      <div class="fade-up flex justify-center lg:justify-end" style="animation-delay:.2s">
+        <img src="/static/assets/GramCare.png"
+             alt="GramCare – Telemedicine Platform"
+             style="width:100%;max-width:440px;
+                    filter:drop-shadow(0 16px 48px rgba(34,197,94,.28)) drop-shadow(0 4px 20px rgba(59,130,246,.22));"/>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PLATFORM VISUAL
+═══════════════════════════════════════════════════════════════ -->
+<section class="py-20 relative overflow-hidden"
+         style="background:linear-gradient(135deg,#F0FDF4 0%,#EFF6FF 60%,#F5F3FF 100%)">
+  <!-- soft decorative circles -->
+  <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full pointer-events-none opacity-40"
+       style="background:radial-gradient(circle,rgba(34,197,94,.15),transparent)"></div>
+  <div class="absolute -bottom-16 -left-16 w-72 h-72 rounded-full pointer-events-none opacity-30"
+       style="background:radial-gradient(circle,rgba(59,130,246,.15),transparent)"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Image -->
+      <div class="relative order-2 lg:order-1 flex justify-center">
+        <div class="relative" style="max-width:400px;width:100%">
+          <div class="absolute inset-0 rounded-3xl -m-3 pointer-events-none"
+               style="background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(59,130,246,.12));
+                      filter:blur(16px)"></div>
+          <img src="/static/assets/landingpage_photo.jpg"
+               alt="GramCare – Online medical consultation platform"
+               class="relative w-full rounded-3xl shadow-2xl"
+               style="border:2px solid rgba(255,255,255,.9);
+                      box-shadow:0 20px 50px rgba(0,0,0,.1),0 0 0 1px rgba(34,197,94,.1)"/>
+        </div>
+      </div>
+
+      <!-- Text -->
+      <div class="order-1 lg:order-2">
+        <span class="inline-flex items-center gap-2 text-green-600 font-bold text-sm uppercase tracking-widest mb-4">
+          <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block"></span>
+          Smart Telemedicine
+        </span>
+        <h2 class="text-3xl lg:text-4xl font-black text-gray-900 mb-5 leading-tight">
+          Healthcare that reaches<br/>
+          <span class="text-transparent bg-clip-text"
+                style="background:linear-gradient(135deg,#22C55E,#3B82F6)">
+            every corner of India
+          </span>
+        </h2>
+        <p class="text-gray-500 leading-relaxed mb-8">
+          GramCare brings specialist doctors and AI-powered diagnostics directly to rural patients.
+          From symptom analysis to prescription delivery — all on a single, offline-first platform
+          designed for the realities of rural India.
+        </p>
+
+        <div class="space-y-4 mb-8">
+          {% for icon, color, bg, title, desc in [
+            ("fa-robot","text-green-600","bg-green-50","AI Symptom Checker","Enter symptoms and get specialist recommendations instantly"),
+            ("fa-user-md","text-blue-600","bg-blue-50","13 Specialised Doctors","From General Physician to Cardiologist, Gynecologist and more"),
+            ("fa-file-pdf","text-purple-600","bg-purple-50","Digital Prescriptions","Download PDF prescriptions and medicine reminders anytime"),
+          ] %}
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl {{ bg }} flex items-center justify-center flex-shrink-0">
+              <i class="fas {{ icon }} {{ color }} text-sm"></i>
+            </div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">{{ title }}</div>
+              <div class="text-gray-500 text-xs mt-0.5">{{ desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a href="/auth/register"
+             class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm transition hover:-translate-y-0.5"
+             style="background:linear-gradient(135deg,#22C55E,#16A34A);box-shadow:0 4px 16px rgba(34,197,94,.35)">
+            <i class="fas fa-user-plus"></i>Get Started Free
+          </a>
+          <a href="#how-it-works"
+             class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-gray-700 text-sm
+                    border border-gray-200 bg-white hover:bg-gray-50 transition">
+            <i class="fas fa-play-circle text-green-500"></i>See How It Works
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════════════════════════ -->
+<section id="how-it-works" class="py-24 bg-white">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <span class="text-green-500 font-bold text-sm uppercase tracking-widest">Simple Process</span>
+      <h2 class="text-4xl font-black text-gray-900 mt-2 mb-4">How GramCare Works</h2>
+      <p class="text-gray-500 max-w-xl mx-auto">From registration to consultation in four easy steps</p>
+    </div>
+
+    <div class="space-y-0">
+      {% set steps = [
+        ("fas fa-user-plus","linear-gradient(135deg,#DCFCE7,#BBF7D0)","text-green-600",
+         "1. Patient Registers","Create a free account using your phone number. Set your own password."),
+        ("fas fa-calendar-plus","linear-gradient(135deg,#DBEAFE,#BAE6FD)","text-blue-600",
+         "2. Book Appointment","Request an appointment with date, time, and symptoms. The doctor gets notified."),
+        ("fas fa-stethoscope","linear-gradient(135deg,#EDE9FE,#DDD6FE)","text-purple-600",
+         "3. Doctor Reviews","Doctor approves, reschedules, or rejects. You see the status instantly."),
+        ("fas fa-file-medical","linear-gradient(135deg,#FEF3C7,#FDE68A)","text-yellow-700",
+         "4. Get Your Records","Download prescriptions, view medicines, track reminders — all in your portal."),
+      ] %}
+
+      {% for icon, bg, color, title, desc in steps %}
+      <div class="flex gap-6 pb-10 {% if not loop.last %}border-l-2 border-dashed border-gray-200 ml-6{% endif %} relative">
+        <div class="feature-icon flex-shrink-0 -ml-6 relative z-10 shadow-md" style="background:{{ bg }}">
+          <i class="{{ icon }} {{ color }}"></i>
+        </div>
+        <div class="pt-2 pb-4">
+          <h3 class="text-lg font-bold text-gray-900 mb-1">{{ title }}</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOR PATIENTS SECTION
+═══════════════════════════════════════════════════════════════ -->
+<section id="for-patients" class="py-24" style="background:linear-gradient(135deg,#F0FDF4,#EFF6FF)">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+      <!-- Left: patient portal mockup -->
+      <div class="relative">
+        <!-- Main card -->
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden" style="border:1px solid #E2E8F0">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between"
+               style="background:linear-gradient(135deg,#F0FDF4,white)">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-sm font-bold text-green-700">S</div>
+              <div>
+                <div class="font-bold text-gray-800 text-sm">Shivi Gupta</div>
+                <div class="text-xs text-green-600">Patient Portal</div>
+              </div>
+            </div>
+            <span class="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>Online
+            </span>
+          </div>
+          <!-- Content -->
+          <div class="p-5 space-y-3">
+            <!-- Upcoming appt -->
+            <div class="p-4 rounded-2xl border border-blue-100" style="background:#EFF6FF">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <i class="fas fa-calendar-check text-blue-500"></i>
+                </div>
+                <div>
+                  <div class="text-xs text-blue-400 font-semibold uppercase tracking-wide">Next Appointment</div>
+                  <div class="text-sm font-bold text-gray-800">General Checkup — June 18</div>
+                  <div class="text-xs text-gray-500">10:00 AM · Dr. Anjali Sharma</div>
+                </div>
+                <span class="ml-auto text-xs bg-blue-200 text-blue-800 font-semibold px-2 py-0.5 rounded-full">Confirmed</span>
+              </div>
+            </div>
+            <!-- Medicine reminder -->
+            <div class="p-4 rounded-2xl border border-green-100" style="background:#F0FDF4">
+              <div class="text-xs text-green-500 font-semibold uppercase tracking-wide mb-2">Today's Medicines</div>
+              <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2"><i class="fas fa-pills text-green-400"></i> Meftal Spas</div>
+                <div class="flex gap-1.5">
+                  <span class="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center text-xs font-bold text-green-600">M</span>
+                  <span class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">A</span>
+                  <span class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">N</span>
+                </div>
+              </div>
+            </div>
+            <!-- Quick actions -->
+            <div class="grid grid-cols-3 gap-2">
+              {% for lbl, ic, c in [('Book','fa-calendar-plus','bg-green-50 text-green-600'),('Reports','fa-file-pdf','bg-purple-50 text-purple-600'),('History','fa-history','bg-orange-50 text-orange-600')] %}
+              <div class="flex flex-col items-center gap-1.5 p-3 rounded-xl {{ c }} cursor-pointer hover:opacity-80 transition">
+                <i class="fas {{ ic }} text-lg"></i>
+                <span class="text-xs font-semibold">{{ lbl }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating badge -->
+        <div class="float absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-3 flex items-center gap-2 border border-gray-100">
+          <div class="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
+            <i class="fas fa-file-pdf text-purple-500 text-sm"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-gray-800">Prescription</div>
+            <div class="text-xs text-gray-400">Ready to download</div>
+          </div>
+        </div>
+
+        <div class="float-slow absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-3 flex items-center gap-2 border border-gray-100">
+          <div class="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-500 text-sm"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-gray-800">Appointment</div>
+            <div class="text-xs text-gray-400">Approved by doctor</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: text content -->
+      <div>
+        <span class="text-green-600 font-bold text-sm uppercase tracking-widest mb-3 block">
+          <i class="fas fa-mobile-alt mr-1"></i>Patient Portal
+        </span>
+        <h2 class="text-3xl lg:text-4xl font-black text-gray-900 mb-4">
+          Everything patients<br/>need, in one place
+        </h2>
+        <p class="text-gray-500 mb-8 leading-relaxed">
+          Patients get a dedicated portal to manage their entire healthcare journey —
+          from booking to prescriptions, all stored privately on the clinic's device.
+        </p>
+
+        <div class="space-y-3 mb-8">
+          {% set pf = [
+            ("fa-calendar-check","bg-green-50 text-green-600","Book & Track Appointments","Request appointments and see doctor's approval status in real time"),
+            ("fa-pills","bg-blue-50 text-blue-600","Medicine Reminders","Morning / afternoon / night schedule with doctor's instructions"),
+            ("fa-file-medical","bg-purple-50 text-purple-600","Download Reports","PDF prescriptions and health summaries available anytime"),
+            ("fa-history","bg-orange-50 text-orange-600","Consultation History","View past diagnoses, prescriptions, and doctor notes"),
+          ] %}
+          {% for icon, cls, title, desc in pf %}
+          <div class="flex items-start gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div class="w-10 h-10 rounded-xl {{ cls }} flex items-center justify-center flex-shrink-0">
+              <i class="fas {{ icon }}"></i>
+            </div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm">{{ title }}</div>
+              <div class="text-gray-500 text-xs mt-0.5">{{ desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="/auth/register"
+             class="flex items-center justify-center gap-2 font-bold text-white text-sm py-3.5 px-7 rounded-2xl transition"
+             style="background:linear-gradient(135deg,#22C55E,#16A34A);box-shadow:0 4px 18px rgba(34,197,94,.35)">
+            <i class="fas fa-user-plus"></i>Register Free
+          </a>
+          <a href="/auth/login?role=patient"
+             class="flex items-center justify-center gap-2 font-semibold text-gray-700 text-sm py-3.5 px-6 rounded-2xl
+                    border border-gray-200 bg-white hover:bg-gray-50 transition">
+            <i class="fas fa-sign-in-alt text-green-500"></i>Already registered
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FEATURES GRID
+═══════════════════════════════════════════════════════════════ -->
+<section id="features" class="py-24 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <span class="text-green-500 font-bold text-sm uppercase tracking-widest">Platform Features</span>
+      <h2 class="text-4xl font-black text-gray-900 mt-2 mb-4">Everything You Need</h2>
+      <p class="text-gray-500 max-w-2xl mx-auto">A complete telemedicine ecosystem — works offline, needs no internet for daily use</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {% set features = [
+        ("fa-brain","linear-gradient(135deg,#DCFCE7,#BBF7D0)","text-green-600",
+         "AI Symptom Checker","Enter symptoms and Gemini AI instantly analyzes conditions, severity, and recommendations."),
+        ("fa-shield-heart","linear-gradient(135deg,#DBEAFE,#BAE6FD)","text-blue-600",
+         "Smart AI Triage","Classifies patient urgency: Low / Medium / High / Emergency with colored badges."),
+        ("fa-file-prescription","linear-gradient(135deg,#EDE9FE,#DDD6FE)","text-purple-600",
+         "PDF Prescriptions","Professional prescriptions generated with ReportLab — downloadable anytime."),
+        ("fa-pills","linear-gradient(135deg,#FEF3C7,#FDE68A)","text-yellow-700",
+         "Medicine Reminders","Morning, afternoon, night schedules set by doctor and shown to patient."),
+        ("fa-chart-bar","linear-gradient(135deg,#FCE7F3,#FBCFE8)","text-pink-600",
+         "Analytics Dashboard","6 interactive charts with appointments, age distribution, disease trends."),
+        ("fa-language","linear-gradient(135deg,#E0F2FE,#BAE6FD)","text-sky-600",
+         "4 Language Support","English, हिंदी, தமிழ், తెలుగు — switch language from any page."),
+        ("fa-calendar-check","linear-gradient(135deg,#F0FDF4,#DCFCE7)","text-emerald-600",
+         "Appointment Workflow","Patient requests → Doctor approves/rejects/reschedules → Instant status update."),
+        ("fa-notes-medical","linear-gradient(135deg,#FFF7ED,#FED7AA)","text-orange-600",
+         "Consultation Notes","Doctor writes diagnosis, recommendations, follow-up — stored per patient."),
+        ("fa-database","linear-gradient(135deg,#F8FAFC,#E2E8F0)","text-slate-600",
+         "100% Local Storage","No cloud, no database. All data in JSON files — yours completely."),
+      ] %}
+      {% for icon, bg, color, title, desc in features %}
+      <div class="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300">
+        <div class="feature-icon mb-4" style="background:{{ bg }}">
+          <i class="fas {{ icon }} {{ color }}"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 mb-2">{{ title }}</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FAQ
+═══════════════════════════════════════════════════════════════ -->
+<section id="faq" class="py-24 bg-gray-50">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <span class="text-green-500 font-bold text-sm uppercase tracking-widest">Questions</span>
+      <h2 class="text-4xl font-black text-gray-900 mt-2">Frequently Asked</h2>
+    </div>
+    <div class="space-y-3">
+      {% set faqs = [
+        ("How do patients register?","Patients click 'Register Free' and enter their name, phone, age, and a password. Their phone number becomes their username."),
+        ("Is internet required?","For initial setup and AI features (Gemini), yes. But all patient data, appointments, and reports work completely offline."),
+        ("How does the appointment approval work?","Patient requests → Doctor sees pending queue → Doctor approves/rejects/reschedules with one click → Patient sees updated status."),
+        ("Can patients download prescriptions?","Yes. After every consultation the doctor generates a PDF. Patients can download it anytime from their Reports page."),
+        ("Is patient data private?","Completely. All data is stored in local JSON files on your device. Nothing is sent to any cloud or third-party service."),
+        ("How many languages are supported?","4 languages: English, Hindi (हिंदी), Tamil (தமிழ்), and Telugu (తెలుగు). Switch anytime using the floating language button."),
+      ] %}
+      {% for q, a in faqs %}
+      <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <details>
+          <summary class="flex items-center justify-between p-5 font-semibold text-gray-800 hover:text-green-600 transition list-none">
+            <span>{{ q }}</span>
+            <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform"></i>
+          </summary>
+          <div class="px-5 pb-5 text-gray-500 text-sm leading-relaxed border-t border-gray-50 pt-3">
+            {{ a }}
+          </div>
+        </details>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOOTER CTA
+═══════════════════════════════════════════════════════════════ -->
+<section class="py-20 hero-bg relative overflow-hidden">
+  <div class="hero-glow absolute inset-0 pointer-events-none"></div>
+  <div class="max-w-3xl mx-auto px-4 text-center relative">
+    <div class="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+         style="background:linear-gradient(135deg,#22C55E,#3B82F6)">
+      <i class="fas fa-heartbeat text-white text-2xl heartbeat"></i>
+    </div>
+    <h2 class="text-3xl lg:text-4xl font-black text-white mb-4">
+      Ready to get started?
+    </h2>
+    <p class="text-slate-400 mb-10 text-lg">Choose your role and access GramCare right now.</p>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
+      <a href="/auth/login?role=doctor"
+         class="flex items-center justify-center gap-2 font-bold text-white text-base py-4 px-10 rounded-2xl
+                transition hover:-translate-y-0.5"
+         style="background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 4px 20px rgba(59,130,246,.4)">
+        <i class="fas fa-user-md"></i>Doctor Login
+      </a>
+      <a href="/auth/login?role=patient"
+         class="flex items-center justify-center gap-2 font-bold text-white text-base py-4 px-10 rounded-2xl
+                transition hover:-translate-y-0.5"
+         style="background:linear-gradient(135deg,#22C55E,#16A34A);box-shadow:0 4px 20px rgba(34,197,94,.4)">
+        <i class="fas fa-user"></i>Patient Login
+      </a>
+      <a href="/auth/register"
+         class="flex items-center justify-center gap-2 font-semibold text-white text-base py-4 px-8 rounded-2xl
+                border border-white/20 bg-white/10 hover:bg-white/15 transition">
+        <i class="fas fa-user-plus"></i>Register Free
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 py-10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#22C55E,#3B82F6)">
+          <i class="fas fa-heartbeat text-white text-sm"></i>
+        </div>
+        <span class="font-black text-lg text-white">Gram<span class="text-green-400">Care</span></span>
+        <span class="text-slate-500 text-xs ml-2">ग्रामकेयर | கிராம்கேர்</span>
+      </div>
+      <div class="text-slate-500 text-sm text-center">
+        © 2025 GramCare — Smart Telemedicine for Rural Communities
+      </div>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="/auth/login?role=doctor" class="text-slate-400 hover:text-blue-400 transition">Doctor Login</a>
+        <a href="/auth/login?role=patient" class="text-slate-400 hover:text-green-400 transition">Patient Login</a>
+        <a href="/auth/register" class="text-slate-400 hover:text-white transition">Register</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('nav-scrolled', window.scrollY > 20);
+});
+// FAQ chevron rotation
+document.querySelectorAll('.faq-item details').forEach(d => {
+  d.addEventListener('toggle', () => {
+    d.querySelector('.fa-chevron-down').style.transform = d.open ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+});
+</script>
+</body>
+</html>

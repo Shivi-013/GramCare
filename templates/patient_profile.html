@@ -1,0 +1,194 @@
+{% extends "base_patient.html" %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Your personal health information{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm">
+  <i class="fas fa-check-circle text-green-500"></i>{{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm">
+  <i class="fas fa-exclamation-circle text-red-500"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left: Profile card -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
+      <!-- Avatar -->
+      <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white"
+           style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+        {{ (patient.name or 'P')[0] }}
+      </div>
+      <h2 class="text-lg font-bold text-gray-800">{{ patient.name }}</h2>
+      <p class="text-sm text-green-600 font-medium">Patient ID: {{ patient.id }}</p>
+      <div class="mt-4 space-y-2 text-sm text-gray-500">
+        {% if patient.age %}
+        <div class="flex items-center justify-center gap-2">
+          <i class="fas fa-birthday-cake text-pink-400 w-4 text-center"></i>{{ patient.age }} years
+        </div>
+        {% endif %}
+        {% if patient.gender %}
+        <div class="flex items-center justify-center gap-2">
+          <i class="fas fa-venus-mars text-blue-400 w-4 text-center"></i>{{ patient.gender }}
+        </div>
+        {% endif %}
+        {% if patient.blood_group %}
+        <div class="flex items-center justify-center gap-2">
+          <i class="fas fa-tint text-red-400 w-4 text-center"></i>Blood: {{ patient.blood_group }}
+        </div>
+        {% endif %}
+        {% if patient.phone %}
+        <div class="flex items-center justify-center gap-2">
+          <i class="fas fa-phone text-green-400 w-4 text-center"></i>{{ patient.phone }}
+        </div>
+        {% endif %}
+        {% if patient.address %}
+        <div class="flex items-center justify-center gap-2">
+          <i class="fas fa-map-marker-alt text-orange-400 w-4 text-center"></i>{{ patient.address }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Health summary card -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-4">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-heartbeat text-red-400"></i>Health Summary
+      </h3>
+      <div class="space-y-2.5">
+        {% if patient.allergies %}
+        <div>
+          <div class="text-xs text-gray-400 uppercase tracking-wide">Allergies</div>
+          <div class="text-sm text-red-600 mt-0.5">{{ patient.allergies }}</div>
+        </div>
+        {% endif %}
+        {% if patient.chronic_conditions %}
+        <div>
+          <div class="text-xs text-gray-400 uppercase tracking-wide">Chronic Conditions</div>
+          <div class="text-sm text-gray-700 mt-0.5">{{ patient.chronic_conditions }}</div>
+        </div>
+        {% endif %}
+        {% if not patient.allergies and not patient.chronic_conditions %}
+        <p class="text-xs text-gray-400 italic">No known conditions on file</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Change password -->
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <i class="fas fa-key text-yellow-500"></i>
+        <h3 class="font-semibold text-gray-800">Change Password</h3>
+      </div>
+      <form action="/portal/profile/change-password" method="post" class="p-6">
+        <div class="space-y-4 max-w-md">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              Current Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input name="current_password" id="cpwd" type="password" required
+                     class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm pr-12
+                            outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"
+                     placeholder="Enter current password"/>
+              <button type="button" onclick="toggleField('cpwd','ceye')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <i id="ceye" class="fas fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              New Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input name="new_password" id="npwd" type="password" required minlength="6"
+                     class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm pr-12
+                            outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"
+                     placeholder="Minimum 6 characters"/>
+              <button type="button" onclick="toggleField('npwd','neye')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <i id="neye" class="fas fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              Confirm New Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input name="confirm_password" id="cnfpwd" type="password" required minlength="6"
+                     class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm pr-12
+                            outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"
+                     placeholder="Repeat new password"/>
+              <button type="button" onclick="toggleField('cnfpwd','cnfeye')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <i id="cnfeye" class="fas fa-eye text-sm"></i>
+              </button>
+            </div>
+            <p id="match-msg" class="text-xs mt-1 hidden"></p>
+          </div>
+          <button type="submit"
+                  class="px-8 py-3 rounded-xl font-semibold text-white text-sm cursor-pointer border-none transition"
+                  style="background:linear-gradient(135deg,#22C55E,#16A34A);box-shadow:0 4px 14px rgba(34,197,94,.3)">
+            <i class="fas fa-save mr-2"></i>Update Password
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Patient login info -->
+    <div class="mt-4 bg-blue-50 rounded-2xl border border-blue-100 p-5">
+      <h3 class="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-info-circle"></i>Your Login Info
+      </h3>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <div class="text-xs text-blue-400 uppercase tracking-wide">Username</div>
+          <div class="font-semibold text-gray-700 mt-0.5">{{ patient.phone }}</div>
+          <div class="text-xs text-blue-400 mt-0.5">(your phone number)</div>
+        </div>
+        <div>
+          <div class="text-xs text-blue-400 uppercase tracking-wide">Role</div>
+          <div class="font-semibold text-gray-700 mt-0.5">Patient</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleField(fieldId, eyeId) {
+  const f = document.getElementById(fieldId);
+  const e = document.getElementById(eyeId);
+  f.type = f.type === 'password' ? 'text' : 'password';
+  e.className = f.type === 'text' ? 'fas fa-eye-slash text-sm' : 'fas fa-eye text-sm';
+}
+const np = document.getElementById('npwd');
+const cp = document.getElementById('cnfpwd');
+const msg = document.getElementById('match-msg');
+function check() {
+  if (!cp.value) { msg.classList.add('hidden'); return; }
+  if (np.value === cp.value) {
+    msg.textContent = '✓ Passwords match'; msg.className = 'text-xs mt-1 text-green-600';
+  } else {
+    msg.textContent = '✗ Passwords do not match'; msg.className = 'text-xs mt-1 text-red-500';
+  }
+  msg.classList.remove('hidden');
+}
+np.addEventListener('input', check);
+cp.addEventListener('input', check);
+</script>
+{% endblock %}

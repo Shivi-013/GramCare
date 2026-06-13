@@ -1,0 +1,482 @@
+{% extends "base_patient.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block page_title %}My Health Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.name.split()[0] if user.name else 'Patient' }}{% endblock %}
+
+{% block head %}
+<style>
+  .stat-card {
+    background: white; border-radius: 16px; padding: 20px;
+    border: 1px solid #E2E8F0; transition: all .2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+
+  .portal-card {
+    background: white; border-radius: 16px; border: 1px solid #E2E8F0;
+    overflow: hidden; transition: all .2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .portal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+
+  .action-btn {
+    display: flex; align-items: center;
+    width: 100%; padding: 10px 14px;
+    border-radius: 10px; text-decoration: none;
+    font-size: 13px; font-weight: 600;
+    transition: all .15s; gap: 10px;
+  }
+  .action-btn:hover { filter: brightness(.97); }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: .02em;
+  }
+  .badge-pending   { background: #FEF9C3; color: #A16207; }
+  .badge-scheduled { background: #DCFCE7; color: #15803D; }
+  .badge-completed { background: #E0F2FE; color: #0369A1; }
+  .badge-cancelled { background: #FEE2E2; color: #B91C1C; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation: fadeUp .4s ease-out both; }
+  .fade-up:nth-child(1){animation-delay:.05s}
+  .fade-up:nth-child(2){animation-delay:.10s}
+  .fade-up:nth-child(3){animation-delay:.15s}
+  .fade-up:nth-child(4){animation-delay:.20s}
+  .fade-up:nth-child(5){animation-delay:.25s}
+  .fade-up:nth-child(6){animation-delay:.30s}
+  .fade-up:nth-child(7){animation-delay:.35s}
+  .fade-up:nth-child(8){animation-delay:.40s}
+
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- ── Welcome Banner ──────────────────────────────────────── -->
+  <div class="rounded-2xl p-5 flex items-center justify-between fade-up"
+       style="background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border:1.5px solid #BBF7D0">
+    <div>
+      <h2 class="text-lg font-black text-gray-800">
+        Good day, {{ user.name.split()[0] if user.name else 'Patient' }}!
+        <span class="text-2xl ml-1">👋</span>
+      </h2>
+      <p class="text-sm text-gray-500 mt-0.5">Here's your health overview for today.</p>
+    </div>
+    <div class="hidden sm:flex items-center gap-3 text-xs text-gray-500">
+      <div class="flex items-center gap-1.5 bg-white/80 rounded-full px-3 py-1.5 border border-green-200">
+        <span class="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
+        Portal Active
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4 Stat Cards ────────────────────────────────────────── -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card fade-up">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+          <i class="fas fa-calendar-check text-white text-sm"></i>
+        </div>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Upcoming</span>
+      </div>
+      <div class="text-2xl font-black text-gray-800">{{ upcoming_count }}</div>
+      <div class="text-xs text-gray-500 mt-0.5">Appointments</div>
+    </div>
+
+    <div class="stat-card fade-up">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+          <i class="fas fa-clock text-white text-sm"></i>
+        </div>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600">Pending</span>
+      </div>
+      <div class="text-2xl font-black text-gray-800">{{ pending_count }}</div>
+      <div class="text-xs text-gray-500 mt-0.5">Awaiting Approval</div>
+    </div>
+
+    <div class="stat-card fade-up">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+          <i class="fas fa-bell text-white text-sm"></i>
+        </div>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-600">Active</span>
+      </div>
+      <div class="text-2xl font-black text-gray-800">{{ active_reminders }}</div>
+      <div class="text-xs text-gray-500 mt-0.5">Medicine Reminders</div>
+    </div>
+
+    <div class="stat-card fade-up">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)">
+          <i class="fas fa-stethoscope text-white text-sm"></i>
+        </div>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">Total</span>
+      </div>
+      <div class="text-2xl font-black text-gray-800">{{ total_consultations }}</div>
+      <div class="text-xs text-gray-500 mt-0.5">Consultations</div>
+    </div>
+  </div>
+
+  <!-- ── 7 Portal Feature Cards ──────────────────────────────── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+    <!-- 1. Upcoming Appointment -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100">
+            <i class="fas fa-calendar-alt text-blue-600 text-sm"></i>
+          </div>
+          <span class="font-bold text-gray-800 text-sm">Upcoming Appointment</span>
+        </div>
+        <a href="/portal/appointments" class="text-xs text-blue-500 hover:text-blue-700 font-semibold transition">View all →</a>
+      </div>
+      <div class="p-5">
+        {% if upcoming_appointments %}
+          {% set appt = upcoming_appointments[0] %}
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0"
+                 style="background:linear-gradient(135deg,#DBEAFE,#BFDBFE)">
+              <span class="text-xs font-bold text-blue-700">
+                {{ appt.date[5:7] if appt.date else '--' }}
+              </span>
+              <span class="text-lg font-black text-blue-800 leading-tight">
+                {{ appt.date[8:10] if appt.date else '--' }}
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-gray-800 text-sm truncate">{{ appt.type or 'General Consultation' }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">
+                <i class="fas fa-user-md mr-1 text-blue-400"></i>{{ appt.doctor_name or appt.doctor or 'Doctor' }}
+              </div>
+              <div class="text-xs text-gray-500 mt-0.5">
+                <i class="fas fa-clock mr-1 text-gray-400"></i>{{ appt.time or 'TBD' }}
+              </div>
+              <span class="status-badge badge-{{ appt.status }} mt-2 inline-flex">
+                <i class="fas fa-circle text-[6px]"></i>{{ appt.status|title }}
+              </span>
+            </div>
+          </div>
+          {% if upcoming_appointments|length > 1 %}
+          <div class="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+            +{{ upcoming_appointments|length - 1 }} more appointment{{ 's' if upcoming_appointments|length > 2 else '' }}
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-calendar-plus text-3xl text-gray-200 mb-2 block"></i>
+            <p class="text-xs text-gray-400">No upcoming appointments</p>
+            <a href="/portal/appointments" class="inline-block mt-2 text-xs text-blue-500 font-semibold hover:underline">Book one now →</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 2. Medicine Reminders -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-100">
+            <i class="fas fa-pills text-green-600 text-sm"></i>
+          </div>
+          <span class="font-bold text-gray-800 text-sm">Medicine Reminders</span>
+        </div>
+        <a href="/portal/reminders" class="text-xs text-green-500 hover:text-green-700 font-semibold transition">View all →</a>
+      </div>
+      <div class="p-5">
+        {% if latest_reminder %}
+          <div class="space-y-2.5">
+            <div class="flex items-center gap-3 p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+              <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-sun text-amber-500 text-xs"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-gray-700">Morning</div>
+                <div class="text-xs text-gray-500 truncate">{{ latest_reminder.medicine_name or latest_reminder.medicine or 'Medicine' }}</div>
+              </div>
+              <span class="text-xs text-amber-600 font-semibold flex-shrink-0">{{ latest_reminder.morning_time or '8:00 AM' }}</span>
+            </div>
+            <div class="flex items-center gap-3 p-2.5 rounded-xl bg-blue-50 border border-blue-100">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-cloud-sun text-blue-500 text-xs"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-gray-700">Afternoon</div>
+                <div class="text-xs text-gray-500 truncate">{{ latest_reminder.medicine_name or latest_reminder.medicine or 'Medicine' }}</div>
+              </div>
+              <span class="text-xs text-blue-600 font-semibold flex-shrink-0">{{ latest_reminder.afternoon_time or '2:00 PM' }}</span>
+            </div>
+            <div class="flex items-center gap-3 p-2.5 rounded-xl bg-purple-50 border border-purple-100">
+              <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-moon text-purple-500 text-xs"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-gray-700">Night</div>
+                <div class="text-xs text-gray-500 truncate">{{ latest_reminder.medicine_name or latest_reminder.medicine or 'Medicine' }}</div>
+              </div>
+              <span class="text-xs text-purple-600 font-semibold flex-shrink-0">{{ latest_reminder.night_time or '9:00 PM' }}</span>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-bell-slash text-3xl text-gray-200 mb-2 block"></i>
+            <p class="text-xs text-gray-400">No active reminders</p>
+            <p class="text-xs text-gray-300 mt-1">Set by your doctor after consultation</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 3. Latest Prescription -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-100">
+            <i class="fas fa-prescription text-indigo-600 text-sm"></i>
+          </div>
+          <span class="font-bold text-gray-800 text-sm">Latest Prescription</span>
+        </div>
+        <a href="/portal/medicines" class="text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition">View all →</a>
+      </div>
+      <div class="p-5">
+        {% if latest_consultation and latest_consultation.medicines %}
+          <div class="mb-3">
+            <div class="text-xs text-gray-400">Prescribed on</div>
+            <div class="text-sm font-bold text-gray-700">{{ latest_consultation.created_at[:10] if latest_consultation.created_at else 'Recent' }}</div>
+          </div>
+          {% if latest_consultation.diagnosis %}
+          <div class="mb-3 p-2.5 bg-indigo-50 rounded-lg">
+            <div class="text-xs font-semibold text-indigo-700">Diagnosis</div>
+            <div class="text-xs text-indigo-600 mt-0.5">{{ latest_consultation.diagnosis[:60] }}{% if latest_consultation.diagnosis|length > 60 %}...{% endif %}</div>
+          </div>
+          {% endif %}
+          <div class="space-y-1.5">
+            {% for med in latest_consultation.medicines[:3] %}
+            <div class="flex items-center gap-2 text-xs">
+              <div class="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-capsules text-indigo-500" style="font-size:9px"></i>
+              </div>
+              <span class="text-gray-700 font-medium truncate">
+                {% if med is mapping %}{{ med.name }}{% if med.dosage %} – <span class="text-gray-400">{{ med.dosage }}</span>{% endif %}{% else %}{{ med }}{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+            {% if latest_consultation.medicines|length > 3 %}
+            <div class="text-xs text-indigo-400">+{{ latest_consultation.medicines|length - 3 }} more</div>
+            {% endif %}
+          </div>
+          {% if latest_consultation.id %}
+          <a href="/portal/reports/download/prescription_{{ latest_consultation.id }}.pdf"
+             class="mt-3 flex items-center gap-2 text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition">
+            <i class="fas fa-download"></i> Download PDF
+          </a>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-file-prescription text-3xl text-gray-200 mb-2 block"></i>
+            <p class="text-xs text-gray-400">No prescription yet</p>
+            <p class="text-xs text-gray-300 mt-1">Generated after your consultation</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 4. Health Reports -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-100">
+            <i class="fas fa-file-medical text-red-500 text-sm"></i>
+          </div>
+          <span class="font-bold text-gray-800 text-sm">Health Reports</span>
+        </div>
+        <a href="/portal/reports" class="text-xs text-red-400 hover:text-red-600 font-semibold transition">View all →</a>
+      </div>
+      <div class="p-5 space-y-2.5">
+        <a href="/portal/reports" class="action-btn" style="background:#FFF1F2;color:#BE123C;">
+          <i class="fas fa-file-prescription w-4 text-center flex-shrink-0"></i>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold">Prescription PDF</div>
+            <div class="text-xs font-normal opacity-70">Latest prescription download</div>
+          </div>
+          <i class="fas fa-download text-xs opacity-60 flex-shrink-0"></i>
+        </a>
+        <a href="/portal/reports" class="action-btn" style="background:#F0FDF4;color:#15803D;">
+          <i class="fas fa-notes-medical w-4 text-center flex-shrink-0"></i>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold">Consultation Report</div>
+            <div class="text-xs font-normal opacity-70">Diagnosis &amp; notes PDF</div>
+          </div>
+          <i class="fas fa-download text-xs opacity-60 flex-shrink-0"></i>
+        </a>
+        <a href="/portal/reports" class="action-btn" style="background:#EFF6FF;color:#1D4ED8;">
+          <i class="fas fa-heartbeat w-4 text-center flex-shrink-0"></i>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold">Health Summary</div>
+            <div class="text-xs font-normal opacity-70">Full health report PDF</div>
+          </div>
+          <i class="fas fa-download text-xs opacity-60 flex-shrink-0"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- 5. Consultation History -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100">
+            <i class="fas fa-stethoscope text-purple-600 text-sm"></i>
+          </div>
+          <span class="font-bold text-gray-800 text-sm">Consultation History</span>
+        </div>
+        <a href="/portal/medicines" class="text-xs text-purple-500 hover:text-purple-700 font-semibold transition">View all →</a>
+      </div>
+      <div class="p-5">
+        {% if latest_consultation %}
+          <div class="flex items-start gap-3 p-3 rounded-xl" style="background:linear-gradient(135deg,#FAF5FF,#F3E8FF)">
+            <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-user-md text-purple-700 text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold text-gray-700">{{ latest_consultation.created_at[:10] if latest_consultation.created_at else 'Recent' }}</div>
+              {% if latest_consultation.diagnosis %}
+              <div class="text-xs text-gray-600 mt-0.5">{{ latest_consultation.diagnosis[:70] }}{% if latest_consultation.diagnosis|length > 70 %}...{% endif %}</div>
+              {% endif %}
+              {% if latest_consultation.notes %}
+              <div class="text-xs text-gray-400 mt-1 italic">"{{ latest_consultation.notes[:60] }}{% if latest_consultation.notes|length > 60 %}...{% endif %}"</div>
+              {% endif %}
+              {% if latest_consultation.follow_up %}
+              <div class="mt-2 flex items-center gap-1 text-xs text-purple-600">
+                <i class="fas fa-calendar-check"></i> Follow-up: {{ latest_consultation.follow_up }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="mt-3 text-xs text-gray-400 text-center">
+            {{ total_consultations }} total consultation{{ 's' if total_consultations != 1 else '' }}
+          </div>
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-stethoscope text-3xl text-gray-200 mb-2 block"></i>
+            <p class="text-xs text-gray-400">No consultations yet</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 6. Doctor Profile -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-100">
+          <i class="fas fa-user-md text-teal-600 text-sm"></i>
+        </div>
+        <span class="font-bold text-gray-800 text-sm">Your Doctor</span>
+      </div>
+      <div class="p-5">
+        {% set my_doctor_name = '' %}
+        {% set my_doctor_spec = '' %}
+        {% if upcoming_appointments %}
+          {% set my_doctor_name = upcoming_appointments[0].doctor_name or upcoming_appointments[0].doctor or '' %}
+          {% set my_doctor_spec = upcoming_appointments[0].specialty or '' %}
+        {% elif latest_consultation %}
+          {% set my_doctor_name = latest_consultation.doctor or '' %}
+          {% set my_doctor_spec = latest_consultation.doctor_specialization or '' %}
+        {% endif %}
+        {% if my_doctor_name %}
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white flex-shrink-0"
+               style="background:linear-gradient(135deg,#14B8A6,#0D9488)">
+            {{ my_doctor_name[3] if my_doctor_name|length > 3 else my_doctor_name[0] }}
+          </div>
+          <div>
+            <div class="font-bold text-gray-800">{{ my_doctor_name }}</div>
+            {% if my_doctor_spec %}
+            <div class="text-xs text-teal-600 font-semibold">{{ my_doctor_spec }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
+            <i class="fas fa-hospital text-teal-500 mb-1 block"></i>
+            <div class="font-semibold text-gray-700">GramCare Clinic</div>
+            <div class="text-gray-400">Clinic</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-2.5 text-center">
+            <i class="fas fa-calendar-check text-blue-500 mb-1 block"></i>
+            <div class="font-semibold text-gray-700">Mon – Sat</div>
+            <div class="text-gray-400">9 AM – 6 PM</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="text-center py-6">
+          <i class="fas fa-user-md text-4xl text-gray-200 mb-3 block"></i>
+          <p class="text-xs text-gray-400">No doctor assigned yet</p>
+          <a href="/portal/appointments"
+             class="inline-block mt-3 text-xs text-teal-600 font-semibold hover:underline">
+            Book an appointment →
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 7. Quick Actions -->
+    <div class="portal-card fade-up">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-100">
+          <i class="fas fa-bolt text-orange-500 text-sm"></i>
+        </div>
+        <span class="font-bold text-gray-800 text-sm">Quick Actions</span>
+      </div>
+      <div class="p-4 grid grid-cols-3 gap-2.5">
+        <a href="/portal/appointments" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#EFF6FF">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+            <i class="fas fa-calendar-plus text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-blue-700">Book Appt</span>
+        </a>
+        <a href="/portal/medicines" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#F0FDF4">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+            <i class="fas fa-pills text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-green-700">Medicines</span>
+        </a>
+        <a href="/portal/reminders" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#FFF7ED">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+            <i class="fas fa-bell text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-amber-700">Reminders</span>
+        </a>
+        <a href="/portal/reports" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#FAF5FF">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)">
+            <i class="fas fa-file-pdf text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-purple-700">Reports</span>
+        </a>
+        <a href="/portal/profile" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#F0FDFA">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#14B8A6,#0D9488)">
+            <i class="fas fa-user-edit text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-teal-700">My Profile</span>
+        </a>
+        <a href="/portal/appointments" class="flex flex-col items-center gap-1.5 p-3 rounded-xl text-center transition hover:scale-105" style="background:#FFF1F2">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#F43F5E,#E11D48)">
+            <i class="fas fa-list-check text-white text-sm"></i>
+          </div>
+          <span class="text-xs font-bold text-rose-700">Status</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

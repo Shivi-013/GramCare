@@ -1,0 +1,34 @@
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+
+# Generated PDFs
+prescriptions/
+
+# Patient data (optional — remove these lines if you want to include sample data)
+data/users.json
+data/patients.json
+data/appointments.json
+data/consultations.json
+data/reminders.json
+
+# Uploads
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

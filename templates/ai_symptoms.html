@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}AI Symptom Checker{% endblock %}
+{% block page_title %}AI Symptom Checker{% endblock %}
+{% block page_subtitle %}Powered by Google Gemini — enter symptoms for AI analysis{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  <!-- Left: Input Form -->
+  <div class="lg:col-span-2 space-y-5">
+    <div class="card p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center"
+          style="background:linear-gradient(135deg,#DCFCE7,#DBEAFE)">
+          <i class="fas fa-brain text-2xl" style="background:linear-gradient(135deg,#22C55E,#3B82F6);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i>
+        </div>
+        <div>
+          <h2 class="font-bold text-gray-800">Symptom Analysis</h2>
+          <p class="text-xs text-gray-400">AI-powered diagnostic assistance</p>
+        </div>
+      </div>
+
+      <form action="/ai/symptoms/check" method="post" data-loading>
+        <div class="space-y-4">
+          <div>
+            <label class="form-label"><i class="fas fa-user mr-1 text-green-500"></i> Patient (optional)</label>
+            <select name="patient_id" class="form-input">
+              <option value="">— Select patient or fill manually —</option>
+              {% for p in patients %}
+              <option value="{{ p.id }}" {% if patient and patient.id == p.id %}selected{% endif %}>
+                {{ p.name }} ({{ p.age }}y, {{ p.gender }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="form-label"><i class="fas fa-birthday-cake mr-1 text-blue-500"></i> Age</label>
+              <input name="age" type="number" min="0" max="120" class="form-input" placeholder="Age"
+                value="{% if patient %}{{ patient.age }}{% endif %}"/>
+            </div>
+            <div>
+              <label class="form-label"><i class="fas fa-venus-mars mr-1 text-purple-500"></i> Gender</label>
+              <select name="gender" class="form-input">
+                <option value="">Unknown</option>
+                <option value="Male" {% if patient and patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if patient and patient.gender == 'Female' %}selected{% endif %}>Female</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="form-label"><i class="fas fa-notes-medical mr-1 text-red-500"></i> Symptoms *</label>
+            <textarea id="symptoms-input" name="symptoms" rows="5" required class="form-input"
+              placeholder="Describe symptoms in detail...&#10;e.g. Fever since 3 days, headache, body ache, runny nose"
+              >{% if symptoms %}{{ symptoms }}{% endif %}</textarea>
+          </div>
+
+          <!-- Emergency Banner (dynamic) -->
+          <div id="emergency-banner" class="emergency-alert {% if not is_emergency %}hidden{% endif %}">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-exclamation-triangle text-red-600 text-2xl animate-bounce"></i>
+              <div>
+                <p class="font-bold text-red-700 text-sm" data-i18n="emergency_title">
+                  🚨 SEEK IMMEDIATE MEDICAL ATTENTION
+                </p>
+                <p class="text-red-600 text-xs mt-1" data-i18n="emergency_msg">
+                  Symptoms indicate a possible medical emergency. Call emergency services immediately!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary w-full justify-center py-3 text-base">
+            <i class="fas fa-brain"></i> Analyze with AI
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Common Symptoms Quick Select -->
+    <div class="card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-sm flex items-center gap-2">
+        <i class="fas fa-list-check text-blue-500"></i> Common Symptoms
+      </h3>
+      <div class="flex flex-wrap gap-2">
+        {% for sym in ["Fever","Cough","Cold","Headache","Body ache","Vomiting","Diarrhea","Chest pain","Breathlessness","Dizziness","Fatigue","Sore throat","Rash","Joint pain","Abdominal pain"] %}
+        <button type="button" onclick="addSymptom('{{ sym }}')"
+          class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:border-green-400 hover:bg-green-50 hover:text-green-700 text-gray-600 transition">
+          {{ sym }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Results -->
+  <div class="lg:col-span-3">
+    {% if result %}
+    <!-- Emergency Alert (full) -->
+    {% if result.emergency or is_emergency %}
+    <div class="emergency-alert mb-5">
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-ambulance text-red-600 text-2xl"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-red-700">🚨 MEDICAL EMERGENCY</h2>
+          <p class="text-red-600 mt-1">These symptoms indicate a <strong>life-threatening emergency</strong>.</p>
+          <div class="mt-3 flex gap-3">
+            <a href="tel:108" class="btn-red text-sm">
+              <i class="fas fa-phone"></i> Call 108 (Ambulance)
+            </a>
+            <a href="tel:112" class="btn-red text-sm">
+              <i class="fas fa-phone-alt"></i> Call 112 (Emergency)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Severity Card -->
+    <div class="card p-5 mb-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-gray-700 flex items-center gap-2">
+          <i class="fas fa-chart-line text-green-500"></i> Analysis Results
+        </h3>
+        <span class="badge text-sm px-4 py-1.5 sev-{{ result.severity|lower }}">
+          <i class="fas fa-{% if result.severity == 'Low' %}check-circle{% elif result.severity == 'Medium' %}exclamation-circle{% elif result.severity == 'High' %}exclamation-triangle{% else %}skull-crossbones{% endif %} mr-1"></i>
+          {{ result.severity }} Severity
+        </span>
+      </div>
+      <div class="bg-gray-50 rounded-xl p-4">
+        <p class="text-sm text-gray-600"><i class="fas fa-info-circle mr-2 text-blue-500"></i>{{ result.severity_reason }}</p>
+      </div>
+      <div class="mt-3">
+        <p class="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">When to seek care</p>
+        <span class="badge badge-blue text-sm px-4 py-2">
+          <i class="fas fa-hospital mr-2"></i>{{ result.when_to_seek_care }}
+        </span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+      <!-- Possible Conditions -->
+      <div class="card p-5">
+        <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <i class="fas fa-virus text-purple-500"></i> Possible Conditions
+        </h3>
+        <div class="space-y-2">
+          {% for cond in result.possible_conditions %}
+          <div class="flex items-center gap-2 p-2.5 bg-purple-50 rounded-lg">
+            <i class="fas fa-circle text-purple-400 text-xs"></i>
+            <span class="text-sm font-medium text-purple-800">{{ cond }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card p-5">
+        <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <i class="fas fa-clipboard-list text-blue-500"></i> Recommendations
+        </h3>
+        <div class="space-y-2">
+          {% for rec in result.recommendations %}
+          <div class="flex items-start gap-2 p-2.5 bg-blue-50 rounded-lg">
+            <i class="fas fa-check-circle text-blue-500 text-sm mt-0.5 flex-shrink-0"></i>
+            <span class="text-sm text-blue-800">{{ rec }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <!-- Home Remedies -->
+      {% if result.home_remedies %}
+      <div class="card p-5">
+        <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <i class="fas fa-home text-green-500"></i> Home Remedies
+        </h3>
+        <div class="space-y-2">
+          {% for rem in result.home_remedies %}
+          <div class="flex items-start gap-2 p-2.5 bg-green-50 rounded-lg">
+            <i class="fas fa-leaf text-green-500 text-sm mt-0.5 flex-shrink-0"></i>
+            <span class="text-sm text-green-800">{{ rem }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Warning Signs -->
+      {% if result.warning_signs %}
+      <div class="card p-5">
+        <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-yellow-500"></i> Warning Signs
+        </h3>
+        <div class="space-y-2">
+          {% for sign in result.warning_signs %}
+          <div class="flex items-start gap-2 p-2.5 bg-yellow-50 rounded-lg">
+            <i class="fas fa-bell text-yellow-500 text-sm mt-0.5 flex-shrink-0"></i>
+            <span class="text-sm text-yellow-800">{{ sign }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Generate PDF Report -->
+    {% if patient %}
+    <div class="card p-5 mt-5 border-2 border-dashed border-green-200">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+          <div>
+            <p class="font-semibold text-gray-800">Generate Health Report PDF</p>
+            <p class="text-sm text-gray-400">Download AI analysis as a printable PDF</p>
+          </div>
+        </div>
+        <form action="/reports/health-report" method="post">
+          <input type="hidden" name="patient_id" value="{{ patient.id }}"/>
+          <input type="hidden" name="symptoms" value="{{ symptoms }}"/>
+          <button class="btn-primary"><i class="fas fa-download"></i> Download PDF</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="card p-12 text-center h-full flex flex-col items-center justify-center">
+      <div class="w-24 h-24 rounded-full bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center mb-6 mx-auto">
+        <i class="fas fa-brain text-4xl" style="background:linear-gradient(135deg,#22C55E,#3B82F6);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-700 mb-2">AI Symptom Analyzer</h3>
+      <p class="text-gray-400 max-w-xs">Enter patient symptoms in the form and our AI will analyze possible conditions, severity, and recommendations.</p>
+      <div class="mt-6 flex items-center gap-4 text-sm text-gray-400">
+        <span><i class="fas fa-shield-check text-green-500 mr-1"></i> Powered by Gemini</span>
+        <span><i class="fas fa-bolt text-yellow-500 mr-1"></i> Instant analysis</span>
+        <span><i class="fas fa-globe text-blue-500 mr-1"></i> Multilingual</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addSymptom(sym) {
+  const ta = document.getElementById('symptoms-input');
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + ', ' + sym : sym;
+  ta.dispatchEvent(new Event('input'));
+  ta.focus();
+}
+</script>
+{% endblock %}

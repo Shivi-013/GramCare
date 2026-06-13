@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}<span data-i18n="dashboard_title">Dashboard</span>{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.name.split()[0] if user and user.name else 'Doctor' }} — here's today's overview{% endblock %}
+
+{% block head %}
+<style>
+@keyframes heartPulse { 0%,100%{transform:scale(1)} 45%{transform:scale(1.22)} 60%{transform:scale(1)} }
+@keyframes docBob     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes ecgAnim    { 0%{stroke-dashoffset:360} 100%{stroke-dashoffset:0} }
+@keyframes cloudDrift { 0%{transform:translateX(0)} 100%{transform:translateX(10px)} }
+@keyframes winBlink   { 0%,100%{opacity:.8} 50%{opacity:1; filter:drop-shadow(0 0 4px #93C5FD)} }
+@keyframes fadeUp     { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse-ring { 0%{transform:scale(1);opacity:.8} 100%{transform:scale(1.8);opacity:0} }
+.da-heart { animation: heartPulse 1.2s ease-in-out infinite; }
+.da-doc   { animation: docBob     3s   ease-in-out infinite; }
+.da-ecg   { stroke-dasharray:360; animation: ecgAnim 2.2s linear infinite; }
+.da-cloud { animation: cloudDrift 7s   ease-in-out infinite alternate; }
+.da-win   { animation: winBlink   2.5s ease-in-out infinite; }
+.fade-up  { animation: fadeUp .35s ease-out both; }
+
+.ai-card {
+  border-radius: 14px; padding: 16px 18px;
+  border: 1.5px solid transparent;
+  transition: all .2s; cursor: pointer; text-decoration: none;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.ai-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+
+.pending-row { padding: 14px 20px; border-bottom: 1px solid #FEF3C7; transition: background .15s; }
+.pending-row:hover { background: #FFFBEB; }
+.pending-row:last-child { border-bottom: none; }
+
+.today-slot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  background: #F8FAFC; margin-bottom: 6px; transition: all .15s;
+}
+.today-slot:hover { background: #EFF6FF; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ Dashboard Banner ════════════════════════════════════════════ -->
+<div class="card mb-6 overflow-hidden" style="background:linear-gradient(135deg,#0F172A 0%,#0C2340 55%,#064E3B 100%)">
+  <div class="relative flex items-center justify-between px-7 py-5 gap-6">
+    <div class="z-10 flex-1 min-w-0">
+      <p class="text-green-400 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse"></span>Live Platform
+      </p>
+      <h2 class="text-2xl font-black text-white mb-1">
+        नमस्ते, {{ user.name.split()[0] if user and user.name else 'Doctor' }}!
+      </h2>
+      <p class="text-slate-400 text-sm mb-3">ग्रामीण स्वास्थ्य सेवा · Rural Healthcare Made Simple</p>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1 bg-green-500/20 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/30">
+          <i class="fas fa-heartbeat text-xs da-heart"></i> GramCare Active
+        </span>
+        <span class="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full border border-blue-500/30">
+          <i class="fas fa-brain text-xs"></i> AI Ready
+        </span>
+        {% if pending_count > 0 %}
+        <a href="/appointments/" class="inline-flex items-center gap-1 bg-orange-500/20 text-orange-300 text-xs font-bold px-3 py-1 rounded-full border border-orange-500/30 hover:bg-orange-500/30 transition">
+          <i class="fas fa-hourglass-half text-xs"></i> {{ pending_count }} Pending
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex-shrink-0 hidden sm:block" style="width:380px;height:175px">
+      <img src="/static/assets/dashboard_pic.jpg"
+           alt="GramCare"
+           style="width:380px;height:175px;object-fit:cover;border-radius:12px"/>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stat Cards ────────────────────────────────────────────── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="stat-card fade-up" style="animation-delay:.04s">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#DCFCE7,#BBF7D0)">
+      <i class="fas fa-users text-green-600"></i>
+    </div>
+    <div>
+      <div class="stat-value" data-counter="{{ total_patients }}">{{ total_patients }}</div>
+      <div class="stat-label">Total Patients</div>
+      <div class="text-xs text-green-500 mt-1 font-medium"><i class="fas fa-arrow-up mr-1"></i>Active records</div>
+    </div>
+  </div>
+  <div class="stat-card fade-up" style="animation-delay:.08s">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#DBEAFE,#BAE6FD)">
+      <i class="fas fa-calendar-check text-blue-500"></i>
+    </div>
+    <div>
+      <div class="stat-value" data-counter="{{ today_appointments }}">{{ today_appointments }}</div>
+      <div class="stat-label">Today's Patients</div>
+      <div class="text-xs text-blue-500 mt-1 font-medium"><i class="fas fa-clock mr-1"></i>Scheduled today</div>
+    </div>
+  </div>
+  <div class="stat-card fade-up" style="animation-delay:.12s">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#F3E8FF,#EDE9FE)">
+      <i class="fas fa-stethoscope text-purple-500"></i>
+    </div>
+    <div>
+      <div class="stat-value" data-counter="{{ total_consultations }}">{{ total_consultations }}</div>
+      <div class="stat-label">Consultations</div>
+      <div class="text-xs text-purple-500 mt-1 font-medium"><i class="fas fa-file-medical mr-1"></i>Total records</div>
+    </div>
+  </div>
+  <div class="stat-card fade-up" style="animation-delay:.16s">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A)">
+      <i class="fas fa-hourglass-half text-orange-500"></i>
+    </div>
+    <div>
+      <div class="stat-value" data-counter="{{ pending_count }}">{{ pending_count }}</div>
+      <div class="stat-label">Pending Requests</div>
+      <div class="text-xs text-orange-500 mt-1 font-medium"><i class="fas fa-bell mr-1"></i>Needs approval</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AI Modules (DOCTOR ONLY) ───────────────────────────────── -->
+<div class="card mb-6 p-5">
+  <h2 class="font-bold text-gray-700 mb-1 flex items-center gap-2">
+    <i class="fas fa-brain text-purple-500"></i> AI-Powered Tools
+    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold ml-1">Doctor Only</span>
+  </h2>
+  <p class="text-xs text-gray-400 mb-4">Gemini AI – exclusive to the doctor portal</p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <a href="/ai/symptoms" class="ai-card fade-up" style="background:#FAF5FF;border-color:#E9D5FF;animation-delay:.1s">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)">
+        <i class="fas fa-brain text-white text-sm"></i>
+      </div>
+      <div>
+        <div class="font-bold text-purple-800 text-sm">AI Symptom Checker</div>
+        <div class="text-xs text-purple-500 mt-0.5">Enter symptoms → conditions + severity + advice</div>
+      </div>
+    </a>
+    <a href="/ai/triage" class="ai-card fade-up" style="background:#FFF7ED;border-color:#FED7AA;animation-delay:.15s">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background:linear-gradient(135deg,#F97316,#EA580C)">
+        <i class="fas fa-shield-heart text-white text-sm"></i>
+      </div>
+      <div>
+        <div class="font-bold text-orange-800 text-sm">AI Triage</div>
+        <div class="text-xs text-orange-500 mt-0.5">Age + symptoms → Low / Medium / High / Emergency</div>
+      </div>
+    </a>
+    <a href="/consultations/" class="ai-card fade-up" style="background:#F0FDF4;border-color:#BBF7D0;animation-delay:.2s">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+           style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+        <i class="fas fa-notes-medical text-white text-sm"></i>
+      </div>
+      <div>
+        <div class="font-bold text-green-800 text-sm">AI Consultation Notes</div>
+        <div class="text-xs text-green-500 mt-0.5">Smart diagnosis, recommendations &amp; summary</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ── Quick Actions ─────────────────────────────────────────── -->
+<div class="card mb-6 p-5">
+  <h2 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+    <i class="fas fa-bolt text-yellow-500"></i> Quick Actions
+  </h2>
+  <div class="flex flex-wrap gap-2.5">
+    <button onclick="openModal('addPatientModal')" class="btn-primary text-sm">
+      <i class="fas fa-user-plus"></i> Add Patient
+    </button>
+    <a href="/appointments/" class="btn-blue text-sm">
+      <i class="fas fa-calendar-plus"></i> Appointments
+    </a>
+    <a href="/consultations/" class="btn-secondary text-sm">
+      <i class="fas fa-stethoscope"></i> Consultations
+    </a>
+    <a href="/reports/" class="btn-secondary text-sm">
+      <i class="fas fa-file-pdf"></i> Generate Report
+    </a>
+    <a href="/reminders/" class="btn-secondary text-sm">
+      <i class="fas fa-bell"></i> Reminders
+    </a>
+    <a href="/analytics/" class="btn-secondary text-sm">
+      <i class="fas fa-chart-line"></i> Analytics
+    </a>
+    <a href="/patients/" class="btn-secondary text-sm">
+      <i class="fas fa-search"></i> Patient Search
+    </a>
+    <a href="/auth/doctor-profile" class="btn-secondary text-sm">
+      <i class="fas fa-user-md"></i> My Profile
+    </a>
+  </div>
+</div>
+
+<!-- ── Pending Approvals ─────────────────────────────────────── -->
+{% if pending_appointments %}
+<div class="card mb-6 overflow-hidden" style="border:1.5px solid #FED7AA">
+  <div class="px-5 py-4 flex items-center justify-between" style="background:linear-gradient(135deg,#FFF7ED,#FFFBEB)">
+    <h2 class="font-bold text-orange-700 flex items-center gap-2">
+      <i class="fas fa-hourglass-half text-orange-500"></i>
+      Pending Patient Requests
+      <span class="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ pending_count }}</span>
+    </h2>
+    <a href="/appointments/" class="text-sm text-orange-500 hover:underline font-semibold">Manage all →</a>
+  </div>
+  {% for a in pending_appointments %}
+  <div class="pending-row flex items-center gap-4">
+    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+         style="background:hsl({{ loop.index * 73 % 360 }},55%,50%)">
+      {{ a.patient_name[0] if a.patient_name else '?' }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold text-gray-800 text-sm">{{ a.patient_name }}</div>
+      <div class="text-xs text-gray-500">
+        <i class="fas fa-tag mr-1 text-orange-300"></i>{{ a.type }}
+        <i class="fas fa-calendar ml-2 mr-1 text-orange-300"></i>{{ a.date }} at {{ a.time }}
+      </div>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <form action="/appointments/{{ a.id }}/approve" method="post" class="inline">
+        <input type="hidden" name="new_date" value=""/>
+        <input type="hidden" name="new_time" value=""/>
+        <button class="btn-primary text-xs py-1.5 px-3"><i class="fas fa-check mr-1"></i>Approve</button>
+      </form>
+      <a href="/appointments/" class="btn-secondary text-xs py-1.5 px-3">
+        <i class="fas fa-eye mr-1"></i>Details
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Main Grid ─────────────────────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+
+  <!-- Recent Patients (2/3 width) -->
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h2 class="font-bold text-gray-700 flex items-center gap-2">
+        <i class="fas fa-users text-green-500"></i> Recent Patients
+      </h2>
+      <a href="/patients/" class="text-sm text-blue-500 hover:text-blue-700 font-semibold">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="rc-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Age / Gender</th>
+            <th>Phone</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in recent_patients %}
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="avatar w-9 h-9 text-sm" style="background:hsl({{ loop.index * 60 }},60%,50%)">
+                  {{ p.name[0] if p.name else '?' }}
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-800">{{ p.name }}</div>
+                  <div class="text-xs text-gray-400">{{ p.id }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="text-gray-700">{{ p.age }}y</span>
+              <span class="badge badge-{% if p.gender == 'Male' %}blue{% else %}green{% endif %} ml-1">{{ p.gender }}</span>
+            </td>
+            <td class="text-gray-600">{{ p.phone }}</td>
+            <td>
+              <a href="/patients/{{ p.id }}" class="btn-secondary text-xs py-1.5 px-3">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-gray-400 py-8">
+            <i class="fas fa-user-slash text-3xl mb-2 block text-gray-300"></i>
+            No patients yet.
+            <button onclick="openModal('addPatientModal')" class="text-green-500 hover:underline block mt-1 mx-auto text-sm">Add first patient →</button>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Today / Upcoming Appointments (1/3 width) -->
+  <div class="card">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h2 class="font-bold text-gray-700 flex items-center gap-2">
+        <i class="fas fa-calendar-check text-blue-500"></i>
+        Upcoming
+      </h2>
+      <a href="/appointments/" class="text-sm text-blue-500 hover:text-blue-700 font-semibold">All →</a>
+    </div>
+    <div class="p-4">
+      {% for a in upcoming_appointments %}
+      <div class="today-slot">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+             style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE)">
+          <i class="fas fa-user text-blue-500 text-xs"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-800 text-sm truncate">{{ a.patient_name }}</div>
+          <div class="text-xs text-gray-400">{{ a.date }} · {{ a.time }}</div>
+          <div class="text-xs text-blue-500 font-medium truncate">{{ a.type }}</div>
+        </div>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0
+              {% if a.status == 'scheduled' %}bg-green-100 text-green-700
+              {% elif a.status == 'pending' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+          {{ a.status|title }}
+        </span>
+      </div>
+      {% else %}
+      <div class="text-center py-8 text-gray-400">
+        <i class="fas fa-calendar-times text-3xl mb-2 block text-gray-300"></i>
+        No upcoming appointments
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent Consultations ──────────────────────────────────── -->
+<div class="card mb-2">
+  <div class="flex items-center justify-between p-5 border-b border-gray-100">
+    <h2 class="font-bold text-gray-700 flex items-center gap-2">
+      <i class="fas fa-stethoscope text-purple-500"></i> Recent Consultations
+    </h2>
+    <a href="/consultations/" class="text-sm text-blue-500 hover:text-blue-700 font-semibold">View all →</a>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="rc-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Doctor</th>
+          <th>Diagnosis</th>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in recent_consultations %}
+        <tr>
+          <td class="font-medium text-gray-800">{{ c.patient_name }}</td>
+          <td class="text-gray-600">{{ c.doctor }}</td>
+          <td>
+            <span class="badge badge-purple">{{ (c.diagnosis or 'N/A')[:30] }}{% if c.diagnosis and c.diagnosis|length > 30 %}...{% endif %}</span>
+          </td>
+          <td class="text-gray-500 text-sm">{{ (c.created_at or c.date or '')[:10] }}</td>
+          <td>
+            <span class="badge badge-green">{{ c.status or 'completed' }}</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-gray-400 py-8">
+          <i class="fas fa-notes-medical text-3xl mb-2 block text-gray-300"></i>No consultations yet.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Add Patient Quick Modal ───────────────────────────────── -->
+<div id="addPatientModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-user-plus text-green-500"></i> Add New Patient
+      </h3>
+      <button onclick="closeModal('addPatientModal')" class="text-gray-400 hover:text-gray-600 p-1">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form action="/patients/add" method="post" class="modal-body" data-loading>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="form-label"><i class="fas fa-user mr-1 text-green-500"></i> Full Name *</label>
+          <input name="name" type="text" required class="form-input" placeholder="Patient full name"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-birthday-cake mr-1 text-blue-500"></i> Age *</label>
+          <input name="age" type="number" required min="0" max="120" class="form-input" placeholder="Age"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-venus-mars mr-1 text-purple-500"></i> Gender *</label>
+          <select name="gender" required class="form-input">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-phone mr-1 text-green-500"></i> Phone *</label>
+          <input name="phone" type="tel" required class="form-input" placeholder="10-digit number"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-tint mr-1 text-red-500"></i> Blood Group</label>
+          <select name="blood_group" class="form-input">
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option>
+            <option>AB+</option><option>AB-</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label"><i class="fas fa-map-marker-alt mr-1 text-yellow-500"></i> Village / Address *</label>
+          <input name="address" type="text" required class="form-input" placeholder="Village, District, State"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addPatientModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary"><i class="fas fa-save mr-1"></i> Save Patient</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

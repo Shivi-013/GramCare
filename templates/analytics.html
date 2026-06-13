@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+{% block page_subtitle %}Visual insights on patients, appointments and consultations{% endblock %}
+
+{% block head %}
+<style>
+  .analytics-stat {
+    background: white; border-radius: 16px; padding: 18px 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    transition: all .2s; display: flex; align-items: center; gap: 14px;
+  }
+  .analytics-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+  .chart-card {
+    background: white; border-radius: 16px; padding: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .chart-title {
+    font-size: 14px; font-weight: 700; color: #1F2937;
+  }
+  .chart-sub {
+    font-size: 11px; color: #9CA3AF; margin-top: 1px;
+  }
+  .chart-container { position: relative; height: 220px; }
+  .chart-container-sm { position: relative; height: 180px; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation: fadeUp .35s ease-out both; }
+  .fade-up:nth-child(1){animation-delay:.04s} .fade-up:nth-child(2){animation-delay:.08s}
+  .fade-up:nth-child(3){animation-delay:.12s} .fade-up:nth-child(4){animation-delay:.16s}
+  .fade-up:nth-child(5){animation-delay:.20s} .fade-up:nth-child(6){animation-delay:.24s}
+  .fade-up:nth-child(7){animation-delay:.28s}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Summary Stat Cards (7 cards) ─────────────────────────── -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+      <i class="fas fa-users text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-patients" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Total<br>Patients</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+      <i class="fas fa-calendar-day text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-today" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Today's<br>Appts</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#F59E0B,#D97706)">
+      <i class="fas fa-hourglass-half text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-pending" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Pending<br>Requests</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#10B981,#059669)">
+      <i class="fas fa-check-circle text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-approved" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Approved<br>Appts</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#EF4444,#DC2626)">
+      <i class="fas fa-times-circle text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-rejected" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Rejected<br>Appts</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)">
+      <i class="fas fa-stethoscope text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-consultations" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Completed<br>Consultations</div>
+    </div>
+  </div>
+
+  <div class="analytics-stat fade-up xl:col-span-1 col-span-1">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+         style="background:linear-gradient(135deg,#06B6D4,#0891B2)">
+      <i class="fas fa-bell text-white text-sm"></i>
+    </div>
+    <div class="min-w-0">
+      <div id="stat-reminders" class="text-2xl font-black text-gray-800" data-counter="0">—</div>
+      <div class="text-xs text-gray-500 leading-tight">Active<br>Reminders</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts Row 1: Bar + Line ──────────────────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-chart-bar text-green-600 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Appointments per Week</div>
+        <div class="chart-sub">Last 7 weeks</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="appointmentsChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-chart-line text-blue-600 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Consultation Trends</div>
+        <div class="chart-sub">Last 4 weeks</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts Row 2: Pie + Donut + Donut ────────────────────── -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-chart-pie text-purple-600 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Age Distribution</div>
+        <div class="chart-sub">By age group</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="ageChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-virus text-red-500 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Disease Categories</div>
+        <div class="chart-sub">From consultations</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="diseaseChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-pink-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-venus-mars text-pink-500 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Gender Distribution</div>
+        <div class="chart-sub">Patient demographics</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="genderChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts Row 3: Horizontal Bar (types) + Medicine Freq ─── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-2">
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-tags text-amber-600 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Appointment Types</div>
+        <div class="chart-sub">Distribution by visit type</div>
+      </div>
+    </div>
+    <div class="chart-container-sm">
+      <canvas id="apptTypeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card fade-up">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-9 h-9 rounded-xl bg-cyan-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-pills text-cyan-600 text-sm"></i>
+      </div>
+      <div>
+        <div class="chart-title">Medicine Frequency</div>
+        <div class="chart-sub">Most prescribed medicines</div>
+      </div>
+    </div>
+    <div class="chart-container-sm">
+      <canvas id="medicineChart"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/charts.js"></script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+{% block page_title %}Patient Management{% endblock %}
+{% block page_subtitle %}{{ total }} registered patients in the system{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+  <div class="flex items-center gap-3">
+    <div class="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center">
+      <i class="fas fa-users text-green-600 text-xl"></i>
+    </div>
+    <div>
+      <h2 class="text-xl font-bold text-gray-800">All Patients</h2>
+      <p class="text-sm text-gray-500">{{ total }} records found</p>
+    </div>
+  </div>
+  <div class="flex gap-3">
+    <form method="get" class="relative">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input name="search" type="text" value="{{ search }}"
+        placeholder="Search by name or phone..."
+        class="pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 w-56"/>
+    </form>
+    <button onclick="openModal('addPatientModal')" class="btn-primary">
+      <i class="fas fa-user-plus"></i> <span data-i18n="add_patient">Add Patient</span>
+    </button>
+  </div>
+</div>
+
+<!-- Patient Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
+  {% for p in patients %}
+  <div class="card p-5 group">
+    <div class="flex items-start gap-4 mb-4">
+      <div class="avatar w-12 h-12 text-lg flex-shrink-0"
+        style="background:linear-gradient(135deg, hsl({{ loop.index * 47 % 360 }},60%,45%), hsl({{ (loop.index * 47 + 60) % 360 }},60%,55%))">
+        {{ p.name[0] }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-bold text-gray-800 text-base truncate">{{ p.name }}</h3>
+        <p class="text-xs text-gray-400">ID: {{ p.id }}</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="badge badge-{% if p.gender == 'Male' %}blue{% elif p.gender == 'Female' %}green{% else %}gray{% endif %}">
+            <i class="fas fa-{% if p.gender == 'Male' %}mars{% elif p.gender == 'Female' %}venus{% else %}genderless{% endif %} text-xs"></i>
+            {{ p.gender }}
+          </span>
+          <span class="badge badge-gray">{{ p.age }} yrs</span>
+          {% if p.blood_group and p.blood_group != 'Unknown' %}
+          <span class="badge badge-red"><i class="fas fa-tint text-xs"></i> {{ p.blood_group }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-2 text-sm">
+      <div class="flex items-center gap-2 text-gray-600">
+        <i class="fas fa-phone w-4 text-green-500"></i>
+        <span>{{ p.phone }}</span>
+      </div>
+      <div class="flex items-start gap-2 text-gray-600">
+        <i class="fas fa-map-marker-alt w-4 text-blue-500 mt-0.5"></i>
+        <span class="leading-tight">{{ p.address }}</span>
+      </div>
+    </div>
+
+    <div class="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+      <a href="/patients/{{ p.id }}" class="btn-secondary text-xs py-2 px-3 flex-1 justify-center">
+        <i class="fas fa-eye"></i> View
+      </a>
+      <a href="/ai/symptoms?patient_id={{ p.id }}" class="btn-primary text-xs py-2 px-3 flex-1 justify-center">
+        <i class="fas fa-brain"></i> AI Check
+      </a>
+      <form action="/patients/{{ p.id }}/delete" method="post" class="inline">
+        <button type="submit" class="btn-red text-xs py-2 px-3"
+          data-confirm="Delete {{ p.name }}? This cannot be undone.">
+          <i class="fas fa-trash"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-span-3 text-center py-20">
+    <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+      <i class="fas fa-user-slash text-3xl text-gray-300"></i>
+    </div>
+    <h3 class="text-lg font-semibold text-gray-500 mb-2">No patients found</h3>
+    <p class="text-gray-400 mb-4">
+      {% if search %}No results for "{{ search }}"{% else %}Start by adding your first patient{% endif %}
+    </p>
+    <button onclick="openModal('addPatientModal')" class="btn-primary">
+      <i class="fas fa-user-plus"></i> Add First Patient
+    </button>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add Patient Modal -->
+<div id="addPatientModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-user-plus text-green-500"></i> Add New Patient
+      </h3>
+      <button onclick="closeModal('addPatientModal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form action="/patients/add" method="post" class="modal-body" data-loading>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="form-label"><i class="fas fa-user mr-1 text-green-500"></i> Full Name *</label>
+          <input name="name" type="text" required class="form-input" placeholder="Enter patient's full name"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-birthday-cake mr-1 text-blue-500"></i> Age *</label>
+          <input name="age" type="number" required min="0" max="120" class="form-input"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-venus-mars mr-1 text-purple-500"></i> Gender *</label>
+          <select name="gender" required class="form-input">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-phone mr-1 text-green-500"></i> Phone *</label>
+          <input name="phone" type="tel" required class="form-input" placeholder="10-digit mobile"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-tint mr-1 text-red-500"></i> Blood Group</label>
+          <select name="blood_group" class="form-input">
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option>
+            <option>AB+</option><option>AB-</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label"><i class="fas fa-map-marker-alt mr-1 text-yellow-500"></i> Village / Address *</label>
+          <input name="address" type="text" required class="form-input" placeholder="Village, Block, District, State"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addPatientModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Patient</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

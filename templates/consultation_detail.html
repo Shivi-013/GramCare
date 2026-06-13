@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Consultation {{ consult.id }}{% endblock %}
+{% block page_title %}Consultation Details{% endblock %}
+{% block page_subtitle %}{{ consult.id }} — {{ consult.date }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-5">
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-stethoscope text-purple-500"></i> Consultation Record
+        </h2>
+        <span class="badge badge-green text-sm px-4">{{ consult.status }}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div class="bg-gray-50 p-3 rounded-xl">
+          <p class="text-xs text-gray-400 mb-1">Patient</p>
+          <p class="font-bold text-gray-800">{{ consult.patient_name }}</p>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-xl">
+          <p class="text-xs text-gray-400 mb-1">Doctor</p>
+          <p class="font-bold text-gray-800">{{ consult.doctor }}</p>
+          {% if consult.doctor_specialization %}
+          <p class="text-xs text-gray-400 mt-0.5">{{ consult.doctor_specialization }}</p>
+          {% endif %}
+        </div>
+        <div class="bg-gray-50 p-3 rounded-xl">
+          <p class="text-xs text-gray-400 mb-1">Date</p>
+          <p class="font-bold text-gray-800">{{ consult.date }}</p>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-xl">
+          <p class="text-xs text-gray-400 mb-1">Diagnosis</p>
+          <p class="font-bold text-purple-700">{{ consult.diagnosis }}</p>
+        </div>
+      </div>
+      <div class="mb-4">
+        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider mb-2">Symptoms</p>
+        <p class="text-gray-700 bg-red-50 p-3 rounded-xl">{{ consult.symptoms }}</p>
+      </div>
+      <div class="mb-4">
+        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider mb-2">Doctor's Notes</p>
+        <p class="text-gray-700 bg-blue-50 p-4 rounded-xl leading-relaxed">{{ consult.notes }}</p>
+      </div>
+      {% if consult.recommended_tests %}
+      <div class="mb-4">
+        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider mb-2">Recommended Tests</p>
+        <div class="flex flex-wrap gap-2">
+          {% for t in consult.recommended_tests %}
+          <span class="text-xs px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-100 font-medium">
+            <i class="fas fa-flask mr-1"></i>{{ t }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if consult.follow_up_date %}
+      <div class="flex items-center gap-2 mt-1 text-sm text-green-700 font-semibold">
+        <i class="fas fa-calendar-alt text-green-500"></i>
+        Follow-up scheduled: {{ consult.follow_up_date }}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if consult.medicines %}
+    <div class="card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-pills text-blue-500"></i> Prescribed Medicines
+      </h3>
+      <div class="space-y-2">
+        {% for med in consult.medicines %}
+        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-capsules text-blue-600 text-sm"></i>
+          </div>
+          <span class="font-medium text-blue-800">{{ med }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="space-y-5">
+    <div class="card p-5">
+      <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <i class="fas fa-file-pdf text-red-500"></i> Generate Documents
+      </h3>
+      <form action="/reports/prescription" method="post" class="space-y-3">
+        <input type="hidden" name="patient_id" value="{{ consult.patient_id }}"/>
+        <input type="hidden" name="doctor" value="{{ consult.doctor }}"/>
+        <input type="hidden" name="diagnosis" value="{{ consult.diagnosis }}"/>
+        <input type="hidden" name="medicines" value="{{ consult.medicines|join(', ') }}"/>
+        <input type="hidden" name="instructions" value="{{ consult.notes }}"/>
+        <input type="hidden" name="consultation_id" value="{{ consult.id }}"/>
+        <button class="btn-primary w-full justify-center">
+          <i class="fas fa-prescription"></i> Download Prescription PDF
+        </button>
+      </form>
+      {% if patient %}
+      <form action="/reports/health-report" method="post" class="mt-3">
+        <input type="hidden" name="patient_id" value="{{ patient.id }}"/>
+        <input type="hidden" name="symptoms" value="{{ consult.symptoms }}"/>
+        <input type="hidden" name="doctor" value="{{ consult.doctor }}"/>
+        <button class="btn-secondary w-full justify-center">
+          <i class="fas fa-file-medical"></i> Download Health Report
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if patient %}
+    <div class="card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-user text-green-500"></i> Patient Info
+      </h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2 text-gray-600">
+          <i class="fas fa-phone w-4 text-green-500"></i>{{ patient.phone }}
+        </div>
+        <div class="flex items-center gap-2 text-gray-600">
+          <i class="fas fa-tint w-4 text-red-500"></i>{{ patient.blood_group }}
+        </div>
+        <div class="flex items-start gap-2 text-gray-600">
+          <i class="fas fa-map-marker-alt w-4 text-blue-500 mt-0.5"></i>{{ patient.address }}
+        </div>
+      </div>
+      <a href="/patients/{{ patient.id }}" class="btn-secondary w-full justify-center mt-3 text-sm">
+        <i class="fas fa-eye"></i> Full Profile
+      </a>
+    </div>
+    {% endif %}
+
+    {% if patient_history and patient_history|length > 1 %}
+    <div class="card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-history text-purple-500"></i> Patient History
+        <span class="ml-auto text-xs font-normal text-gray-400">{{ patient_history|length }} visits</span>
+      </h3>
+      <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+        {% for h in patient_history %}
+        <a href="/consultations/{{ h.id }}"
+           class="block p-3 rounded-xl border transition
+                  {% if h.id == consult.id %}border-purple-300 bg-purple-50{% else %}border-gray-100 hover:border-purple-200 hover:bg-gray-50{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500">{{ h.date }}</span>
+            {% if h.id == consult.id %}
+            <span class="text-xs text-purple-600 font-bold">Current</span>
+            {% endif %}
+          </div>
+          <div class="text-sm font-semibold text-gray-800 truncate">{{ h.diagnosis or 'Consultation' }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">{{ h.doctor }} · {{ h.doctor_specialization or '' }}</div>
+          {% if h.medicines %}
+          <div class="flex flex-wrap gap-1 mt-1">
+            {% for m in h.medicines[:2] %}
+            <span class="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{{ m }}</span>
+            {% endfor %}
+            {% if h.medicines|length > 2 %}
+            <span class="text-xs text-gray-400">+{{ h.medicines|length - 2 }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,529 @@
+{% extends "base_patient.html" %}
+{% block title %}My Appointments{% endblock %}
+{% block page_title %}My Appointments{% endblock %}
+{% block page_subtitle %}Book and manage your appointments{% endblock %}
+
+{% block head %}
+<style>
+  .spec-card {
+    cursor: pointer; border: 2px solid #E5E7EB; border-radius: 14px;
+    padding: 10px 8px; background: #F9FAFB; text-align: center;
+    transition: all .18s; user-select: none;
+  }
+  .spec-card:hover { background: #F3F4F6; border-color: #D1D5DB; transform: translateY(-1px); }
+  .spec-card.selected { border-color: #22C55E; background: #F0FDF4; box-shadow: 0 0 0 3px rgba(34,197,94,.1); }
+  .spec-name { font-size: 11px; font-weight: 700; color: #374151; margin-top: 5px; line-height: 1.2; }
+  .spec-sub  { font-size: 10px; color: #9CA3AF; line-height: 1.2; }
+
+  .doc-card {
+    cursor: pointer; border: 2px solid #E5E7EB; border-radius: 14px;
+    padding: 12px; background: white; transition: all .18s;
+  }
+  .doc-card:hover { border-color: #93C5FD; background: #EFF6FF; transform: translateY(-1px); }
+  .doc-card.selected { border-color: #3B82F6; background: #EFF6FF; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+
+  /* Step sections */
+  .step-section { display: none; }
+  .step-section.visible { display: block; animation: fadeUp .25s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .step-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; color: #4B5563;
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px;
+  }
+  .step-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #22C55E; color: white;
+    font-size: 10px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-center; flex-shrink: 0;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm">
+  <i class="fas fa-check-circle text-green-500"></i>{{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 flex items-center gap-2 text-sm">
+  <i class="fas fa-exclamation-circle text-red-500"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- ── Booking Panel ─────────────────────────────────── -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"
+           style="background:linear-gradient(135deg,#F0FDF4,white)">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-plus-circle text-green-500"></i>Book New Appointment
+        </h3>
+        <p class="text-xs text-gray-400 mt-0.5">3 quick steps</p>
+      </div>
+
+      <div class="p-5 space-y-5">
+
+        <!-- ── Step 1: Specialty ──────────────────────── -->
+        <div>
+          <div class="step-label">
+            <span class="step-num">1</span>Choose Specialty
+          </div>
+          <div class="grid grid-cols-2 gap-2" id="specialty-grid">
+
+            <div class="spec-card" data-value="General Physician" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#DBEAFE">
+                <i class="fas fa-stethoscope text-blue-500 text-xs"></i></div>
+              <div class="spec-name">General Physician</div>
+              <div class="spec-sub">Illness, check-ups</div>
+            </div>
+            <div class="spec-card" data-value="Cardiologist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#FEE2E2">
+                <i class="fas fa-heart text-red-500 text-xs"></i></div>
+              <div class="spec-name">Cardiologist</div>
+              <div class="spec-sub">Heart, BP</div>
+            </div>
+            <div class="spec-card" data-value="Gynecologist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#FCE7F3">
+                <i class="fas fa-female text-pink-500 text-xs"></i></div>
+              <div class="spec-name">Gynecologist</div>
+              <div class="spec-sub">Women's health</div>
+            </div>
+            <div class="spec-card" data-value="Neurologist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#EDE9FE">
+                <i class="fas fa-brain text-purple-500 text-xs"></i></div>
+              <div class="spec-name">Neurologist</div>
+              <div class="spec-sub">Brain, nerves</div>
+            </div>
+            <div class="spec-card" data-value="Orthopedic" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#FEF3C7">
+                <i class="fas fa-bone text-amber-500 text-xs"></i></div>
+              <div class="spec-name">Orthopedic</div>
+              <div class="spec-sub">Bones, joints</div>
+            </div>
+            <div class="spec-card" data-value="Dermatologist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#FEF9C3">
+                <i class="fas fa-allergies text-yellow-500 text-xs"></i></div>
+              <div class="spec-name">Dermatologist</div>
+              <div class="spec-sub">Skin, hair</div>
+            </div>
+            <div class="spec-card" data-value="Pediatrician" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#D1FAE5">
+                <i class="fas fa-baby text-green-500 text-xs"></i></div>
+              <div class="spec-name">Pediatrician</div>
+              <div class="spec-sub">Children (0–18)</div>
+            </div>
+            <div class="spec-card" data-value="ENT" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#CFFAFE">
+                <i class="fas fa-deaf text-cyan-600 text-xs"></i></div>
+              <div class="spec-name">ENT</div>
+              <div class="spec-sub">Ear, nose, throat</div>
+            </div>
+            <div class="spec-card" data-value="Psychiatrist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#E0E7FF">
+                <i class="fas fa-head-side-virus text-indigo-500 text-xs"></i></div>
+              <div class="spec-name">Psychiatrist</div>
+              <div class="spec-sub">Mental health</div>
+            </div>
+            <div class="spec-card" data-value="Ophthalmologist" onclick="pickSpec(this)">
+              <div class="w-8 h-8 rounded-lg mx-auto flex items-center justify-center" style="background:#BAE6FD">
+                <i class="fas fa-eye text-sky-500 text-xs"></i></div>
+              <div class="spec-name">Ophthalmologist</div>
+              <div class="spec-sub">Eyes, vision</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Step 2: Doctor ─────────────────────────── -->
+        <div id="doctor-section" class="step-section">
+          <div class="step-label">
+            <span class="step-num">2</span>
+            <span>Select a Doctor</span>
+            <button onclick="resetSpec()"
+                    class="ml-auto text-xs text-gray-400 hover:text-red-400 transition">
+              <i class="fas fa-arrow-left mr-1"></i>Back
+            </button>
+          </div>
+          <div id="doctor-cards" class="space-y-2"></div>
+        </div>
+
+        <!-- ── Step 3: Details ────────────────────────── -->
+        <div id="booking-form" class="step-section">
+          <form action="/portal/appointments/book" method="post" class="space-y-3">
+            <input type="hidden" name="specialty"   id="specialty-hidden"   value="">
+            <input type="hidden" name="doctor_id"   id="doctor-id-hidden"   value="">
+            <input type="hidden" name="doctor_name" id="doctor-name-hidden" value="">
+
+            <!-- Recap banner -->
+            <div class="flex items-center gap-2 p-2.5 rounded-xl"
+                 style="background:#F0FDF4;border:1px solid #BBF7D0">
+              <i class="fas fa-check-circle text-green-500 text-sm"></i>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-green-800" id="recap-doctor">—</div>
+                <div class="text-xs text-green-600" id="recap-spec">—</div>
+              </div>
+              <button type="button" onclick="resetDoctor()"
+                      class="ml-auto text-xs text-gray-400 hover:text-red-400 shrink-0">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+
+            <div class="step-label">
+              <span class="step-num">3</span>Appointment Details
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                Preferred Date <span class="text-red-500">*</span>
+              </label>
+              <input name="date" type="date" required min="{{ today }}"
+                     class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                            focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                Preferred Time <span class="text-red-500">*</span>
+              </label>
+              <input name="time" type="time" required
+                     class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                            focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                Visit Type <span class="text-red-500">*</span>
+              </label>
+              <select name="type" required
+                      class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                             focus:border-green-400 focus:ring-2 focus:ring-green-100 transition bg-white">
+                <option value="">Select...</option>
+                <option>First Consultation</option>
+                <option>Follow-up</option>
+                <option>Prescription Renewal</option>
+                <option>General Checkup</option>
+                <option>Vaccination</option>
+                <option>Emergency</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                Reason for Visit / Symptoms <span class="text-red-500">*</span>
+              </label>
+              <textarea name="symptoms" rows="3" required
+                        class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                               focus:border-green-400 focus:ring-2 focus:ring-green-100 transition resize-none"
+                        placeholder="Describe your symptoms, e.g. Fever for 3 days, chest pain, shortness of breath..."></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                  Duration
+                </label>
+                <input name="duration" type="text"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                              focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"
+                       placeholder="e.g. 3 days, 1 week"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                  Additional Notes
+                </label>
+                <input name="notes" type="text"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none
+                              focus:border-green-400 focus:ring-2 focus:ring-green-100 transition"
+                       placeholder="Any other info..."/>
+              </div>
+            </div>
+            <button type="submit"
+                    class="w-full py-3 rounded-xl text-sm font-bold text-white border-none cursor-pointer"
+                    style="background:linear-gradient(135deg,#22C55E,#16A34A);
+                           box-shadow:0 4px 14px rgba(34,197,94,.3)">
+              <i class="fas fa-paper-plane mr-2"></i>Request Appointment
+            </button>
+          </form>
+        </div>
+
+        <!-- AI hint (shown until step 1) -->
+        <div id="ai-hint" class="p-3 rounded-xl border border-dashed border-green-200 bg-green-50 text-center">
+          <p class="text-xs text-green-700">
+            <i class="fas fa-robot mr-1 text-green-500"></i>
+            Not sure which doctor to visit?
+            <a href="/portal/symptoms" class="font-bold underline hover:no-underline">Try AI Symptom Check →</a>
+          </p>
+        </div>
+
+      </div><!-- /card body -->
+    </div><!-- /card -->
+  </div><!-- /left col -->
+
+  <!-- ── Appointments List ──────────────────────────────── -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Pending -->
+    {% set pending = appointments | selectattr('status','equalto','pending') | list %}
+    {% if pending %}
+    <div class="bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-orange-100 bg-orange-50">
+        <h3 class="font-semibold text-orange-700 flex items-center gap-2 text-sm">
+          <i class="fas fa-hourglass-half"></i>Awaiting Doctor Approval
+          <span class="bg-orange-200 text-orange-700 text-xs px-2 py-0.5 rounded-full">{{ pending | length }}</span>
+        </h3>
+      </div>
+      <div class="divide-y divide-gray-50">
+        {% for appt in pending %}
+        <div class="px-5 py-3 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex flex-col items-center justify-center
+                      bg-orange-50 text-orange-600 leading-tight">
+            <span class="text-xs font-bold">{{ appt.date[5:7] if appt.date else '?' }}</span>
+            <span class="text-sm font-black">{{ appt.date[8:10] if appt.date else '??' }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-2 mb-0.5">
+              <span class="text-sm font-semibold text-gray-800">{{ appt.type }}</span>
+              {% if appt.specialty %}
+              <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                <i class="fas fa-user-md mr-1 text-xs"></i>{{ appt.specialty }}
+              </span>
+              {% endif %}
+            </div>
+            {% if appt.doctor_name %}
+            <div class="text-xs text-gray-500 font-medium">
+              <i class="fas fa-user-md text-blue-400 mr-1"></i>{{ appt.doctor_name }}
+            </div>
+            {% endif %}
+            <div class="text-xs text-gray-400 mt-0.5">{{ appt.date }} at {{ appt.time }}</div>
+            {% if appt.notes %}
+            <div class="text-xs text-gray-500 mt-1 italic">{{ appt.notes[:80] }}</div>
+            {% endif %}
+          </div>
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <span class="text-xs px-2.5 py-1 rounded-full font-semibold bg-orange-50 text-orange-600">
+              <i class="fas fa-clock mr-1"></i>Pending
+            </span>
+            <form action="/portal/appointments/{{ appt.id }}/cancel" method="post">
+              <button type="submit" onclick="return confirm('Cancel this appointment request?')"
+                      class="text-xs text-red-400 hover:text-red-600 hover:underline">Cancel</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Confirmed -->
+    {% set scheduled = appointments | selectattr('status','equalto','scheduled') | list %}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm">
+          <i class="fas fa-calendar-check text-blue-500"></i>Confirmed Appointments
+          <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">{{ scheduled | length }}</span>
+        </h3>
+      </div>
+      {% if scheduled %}
+      <div class="divide-y divide-gray-50">
+        {% for appt in scheduled %}
+        <div class="px-5 py-3 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex flex-col items-center justify-center
+                      bg-blue-50 text-blue-600 leading-tight">
+            <span class="text-xs font-bold">{{ appt.date[5:7] if appt.date else '?' }}</span>
+            <span class="text-sm font-black">{{ appt.date[8:10] if appt.date else '??' }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-2 mb-0.5">
+              <span class="text-sm font-semibold text-gray-800">{{ appt.type }}</span>
+              {% if appt.specialty %}
+              <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                {{ appt.specialty }}
+              </span>
+              {% endif %}
+            </div>
+            {% if appt.doctor_name %}
+            <div class="text-xs text-gray-500 font-medium">
+              <i class="fas fa-user-md text-blue-400 mr-1"></i>{{ appt.doctor_name }}
+            </div>
+            {% endif %}
+            <div class="text-xs text-gray-400 mt-0.5">{{ appt.date }} at {{ appt.time }}</div>
+            {% if appt.notes %}
+            <div class="text-xs text-gray-500 mt-1 italic">{{ appt.notes[:80] }}</div>
+            {% endif %}
+          </div>
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <span class="text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-50 text-blue-600">Confirmed</span>
+            <form action="/portal/appointments/{{ appt.id }}/cancel" method="post">
+              <button type="submit" onclick="return confirm('Cancel this appointment?')"
+                      class="text-xs text-red-400 hover:text-red-600 hover:underline">Cancel</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="px-5 py-8 text-center text-gray-400">
+        <i class="fas fa-calendar-times text-3xl mb-2 opacity-40 block"></i>
+        <p class="text-sm">No confirmed appointments yet</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Past -->
+    {% set past = appointments | selectattr('status','in',['completed','cancelled']) | list %}
+    {% if past %}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2 text-sm">
+          <i class="fas fa-history text-gray-400"></i>Past Appointments
+        </h3>
+      </div>
+      <div class="divide-y divide-gray-50">
+        {% for appt in past[:5] %}
+        <div class="px-5 py-3 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex-shrink-0 flex flex-col items-center justify-center
+                      bg-gray-50 text-gray-400 leading-tight">
+            <span class="text-xs font-bold">{{ appt.date[5:7] if appt.date else '?' }}</span>
+            <span class="text-sm font-black">{{ appt.date[8:10] if appt.date else '??' }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-2 mb-0.5">
+              <span class="text-sm font-semibold text-gray-600">{{ appt.type }}</span>
+              {% if appt.specialty %}
+              <span class="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200">
+                {{ appt.specialty }}
+              </span>
+              {% endif %}
+            </div>
+            {% if appt.doctor_name %}
+            <div class="text-xs text-gray-400 font-medium">{{ appt.doctor_name }}</div>
+            {% endif %}
+            <div class="text-xs text-gray-400 mt-0.5">{{ appt.date }} at {{ appt.time }}</div>
+            {% if appt.rejection_reason %}
+            <div class="text-xs text-red-500 mt-1">
+              <i class="fas fa-times-circle mr-1"></i>{{ appt.rejection_reason }}
+            </div>
+            {% endif %}
+          </div>
+          <span class="flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold
+                {% if appt.status == 'completed' %}bg-green-50 text-green-600
+                {% else %}bg-red-50 text-red-500{% endif %}">
+            {{ appt.status | capitalize }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /right col -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const allDoctors = {{ doctors | tojson }};
+
+function pickSpec(card) {
+  document.querySelectorAll('.spec-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const spec = card.dataset.value;
+  document.getElementById('specialty-hidden').value = spec;
+  document.getElementById('ai-hint').style.display = 'none';
+
+  // Filter doctors for this specialty
+  const matching = allDoctors.filter(d => d.specialization === spec);
+  const container = document.getElementById('doctor-cards');
+  container.innerHTML = '';
+
+  if (matching.length === 0) {
+    container.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No doctors available for this specialty yet.</p>`;
+  } else {
+    matching.forEach(doc => {
+      const div = document.createElement('div');
+      div.className = 'doc-card';
+      div.dataset.id = doc.id;
+      div.dataset.name = doc.name;
+      div.onclick = () => pickDoctor(div);
+      div.innerHTML = `
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
+               style="background:linear-gradient(135deg,#3B82F6,#2563EB)">
+            ${doc.name.split(' ').map(w=>w[0]).slice(1,3).join('')}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-bold text-gray-800">${doc.name}</div>
+            <div class="text-xs text-blue-600 font-medium">${doc.specialization}</div>
+            <div class="text-xs text-gray-400">${doc.qualifications} · ${doc.experience}</div>
+            ${doc.bio ? `<div class="text-xs text-gray-500 mt-0.5 line-clamp-1">${doc.bio}</div>` : ''}
+          </div>
+          <div class="w-5 h-5 rounded-full border-2 border-gray-200 flex-shrink-0 mt-0.5 check-circle
+                      flex items-center justify-center"></div>
+        </div>`;
+      container.appendChild(div);
+    });
+  }
+
+  // Show doctor section
+  document.getElementById('doctor-section').classList.add('visible');
+  document.getElementById('doctor-section').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  document.getElementById('booking-form').classList.remove('visible');
+}
+
+function pickDoctor(card) {
+  document.querySelectorAll('.doc-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.check-circle').innerHTML = '';
+    c.querySelector('.check-circle').style.borderColor = '#D1D5DB';
+  });
+  card.classList.add('selected');
+  card.querySelector('.check-circle').innerHTML = '<i class="fas fa-check text-white" style="font-size:9px"></i>';
+  card.querySelector('.check-circle').style.cssText = 'background:#3B82F6;border-color:#3B82F6;';
+
+  document.getElementById('doctor-id-hidden').value   = card.dataset.id;
+  document.getElementById('doctor-name-hidden').value = card.dataset.name;
+  document.getElementById('recap-doctor').textContent = card.dataset.name;
+  document.getElementById('recap-spec').textContent   = document.getElementById('specialty-hidden').value;
+
+  const form = document.getElementById('booking-form');
+  form.classList.add('visible');
+  form.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function resetSpec() {
+  document.querySelectorAll('.spec-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('doctor-section').classList.remove('visible');
+  document.getElementById('booking-form').classList.remove('visible');
+  document.getElementById('ai-hint').style.display = 'block';
+  document.getElementById('specialty-hidden').value = '';
+}
+
+function resetDoctor() {
+  document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('booking-form').classList.remove('visible');
+  document.getElementById('doctor-id-hidden').value = '';
+  document.getElementById('doctor-name-hidden').value = '';
+}
+
+// Pre-select if arriving from symptom checker
+(function(){
+  const params = new URLSearchParams(location.search);
+  const spec = params.get('specialty');
+  const did  = params.get('doctor_id');
+  if (spec) {
+    const card = [...document.querySelectorAll('.spec-card')].find(c => c.dataset.value === spec);
+    if (card) { pickSpec(card); }
+    if (did) {
+      // Wait for doctor cards to render then auto-select
+      setTimeout(() => {
+        const dc = document.querySelector(`.doc-card[data-id="${did}"]`);
+        if (dc) pickDoctor(dc);
+      }, 100);
+    }
+  }
+})();
+</script>
+{% endblock %}

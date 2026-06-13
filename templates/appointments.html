@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}Appointments{% endblock %}
+{% block page_title %}Appointments{% endblock %}
+{% block page_subtitle %}Manage and schedule patient appointments{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="stat-card p-4">
+      <div class="stat-icon w-10 h-10" style="background:linear-gradient(135deg,#DBEAFE,#BAE6FD)">
+        <i class="fas fa-calendar-check text-blue-500 text-base"></i>
+      </div>
+      <div>
+        <div class="stat-value text-2xl">{{ today_count }}</div>
+        <div class="stat-label text-xs">Today's Appointments</div>
+      </div>
+    </div>
+    <div class="stat-card p-4">
+      <div class="stat-icon w-10 h-10" style="background:linear-gradient(135deg,#DCFCE7,#BBF7D0)">
+        <i class="fas fa-list-alt text-green-600 text-base"></i>
+      </div>
+      <div>
+        <div class="stat-value text-2xl">{{ appointments|length }}</div>
+        <div class="stat-label text-xs">Upcoming Total</div>
+      </div>
+    </div>
+    <div class="stat-card p-4">
+      <div class="stat-icon w-10 h-10" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A)">
+        <i class="fas fa-hourglass-half text-amber-500 text-base"></i>
+      </div>
+      <div>
+        <div class="stat-value text-2xl">{{ pending_count }}</div>
+        <div class="stat-label text-xs">Pending Requests</div>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <!-- Your specialty badge -->
+    <div class="flex items-center gap-2 px-4 py-2 rounded-xl border"
+         style="background:#EFF6FF;border-color:#BFDBFE">
+      <i class="fas fa-user-md text-blue-600 text-sm"></i>
+      <span class="text-sm font-semibold text-blue-800">{{ doctor_specialty }}</span>
+    </div>
+    <button onclick="openModal('bookModal')" class="btn-primary">
+      <i class="fas fa-calendar-plus"></i> Book Appointment
+    </button>
+  </div>
+</div>
+
+<!-- ── Pending Approval Queue ─────────────────────────── -->
+{% if pending_appointments %}
+<div class="card mb-6 border-2" style="border-color:#FED7AA">
+  <div class="p-5 border-b border-orange-100 flex items-center justify-between flex-wrap gap-3"
+       style="background:linear-gradient(135deg,#FFF7ED,white)">
+    <h2 class="font-bold text-orange-700 flex items-center gap-2">
+      <i class="fas fa-hourglass-half text-orange-500"></i> Pending Approval
+      <span class="ml-1 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        {{ pending_count }}
+      </span>
+    </h2>
+    <span class="text-xs text-orange-500 flex items-center gap-1.5">
+      <i class="fas fa-filter"></i>
+      Showing requests for <strong>{{ doctor_specialty }}</strong> only
+    </span>
+  </div>
+  <div class="divide-y divide-orange-50">
+    {% for a in pending_appointments %}
+    <div class="p-5 flex items-start gap-5">
+      <!-- Patient avatar -->
+      <div class="flex-shrink-0">
+        <div class="avatar w-11 h-11 text-sm font-bold"
+             style="background:hsl({{ loop.index * 55 % 360 }},55%,50%)">
+          {{ a.patient_name[0] if a.patient_name else '?' }}
+        </div>
+      </div>
+      <!-- Info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start flex-wrap gap-2">
+          <span class="font-bold text-gray-800">{{ a.patient_name }}</span>
+          <span class="text-xs text-gray-400">{{ a.patient_id }}</span>
+          <!-- Specialty badge -->
+          {% if a.specialty %}
+          <span class="badge text-xs px-2 py-0.5 rounded-full font-semibold"
+                style="background:#DBEAFE;color:#1D4ED8;border:1px solid #BFDBFE">
+            <i class="fas fa-user-md mr-1"></i>{{ a.specialty }}
+          </span>
+          {% endif %}
+          <span class="badge badge-purple text-xs">{{ a.type }}</span>
+        </div>
+        <div class="text-sm text-gray-600 mt-1 flex items-center gap-3 flex-wrap">
+          <span><i class="fas fa-calendar text-blue-400 mr-1"></i>{{ a.date }}</span>
+          <span><i class="fas fa-clock text-orange-400 mr-1"></i>{{ a.time }}</span>
+          <span class="badge badge-purple text-xs">{{ a.type }}</span>
+        </div>
+        {% if a.symptoms %}
+        <div class="mt-2 text-xs bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-red-700 leading-relaxed">
+          <span class="font-semibold uppercase tracking-wide">Symptoms:</span> {{ a.symptoms[:250] }}
+        </div>
+        {% endif %}
+        {% if a.notes %}
+        <div class="mt-1 text-xs text-gray-500 italic">
+          <i class="fas fa-comment text-gray-300 mr-1"></i>{{ a.notes[:120] }}
+        </div>
+        {% endif %}
+        <div class="text-xs text-gray-400 mt-1">Requested {{ a.created_at[:10] if a.created_at else 'recently' }}</div>
+      </div>
+      <!-- Action buttons -->
+      <div class="flex-shrink-0 flex flex-col gap-2">
+        <form action="/appointments/{{ a.id }}/approve" method="post" class="flex gap-1">
+          <input type="hidden" name="new_date" value=""/>
+          <input type="hidden" name="new_time" value=""/>
+          <button type="submit" class="btn-primary text-xs py-2 px-4 flex items-center gap-1">
+            <i class="fas fa-check"></i> Approve
+          </button>
+        </form>
+        <button onclick="openRescheduleModal('{{ a.id }}','{{ a.patient_name }}','{{ a.date }}','{{ a.time }}')"
+                class="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1">
+          <i class="fas fa-clock"></i> Reschedule
+        </button>
+        <button onclick="openRejectModal('{{ a.id }}','{{ a.patient_name }}')"
+                class="btn-red text-xs py-1.5 px-3 flex items-center gap-1">
+          <i class="fas fa-times"></i> Reject
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card mb-6 border border-dashed border-gray-200">
+  <div class="p-8 text-center">
+    <div class="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-green-50">
+      <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+    </div>
+    <p class="font-semibold text-gray-600 mb-1">No pending requests</p>
+    <p class="text-sm text-gray-400">All appointment requests for <strong>{{ doctor_specialty }}</strong> are handled.</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Appointments Table -->
+<div class="card">
+  <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+    <h2 class="font-bold text-gray-700 flex items-center gap-2">
+      <i class="fas fa-calendar text-blue-500"></i> Upcoming Appointments
+    </h2>
+    <span class="text-sm text-gray-400">Sorted by date and time</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="rc-table">
+      <thead>
+        <tr>
+          <th><i class="fas fa-hashtag mr-1"></i> ID</th>
+          <th><i class="fas fa-user mr-1"></i> Patient</th>
+          <th><i class="fas fa-calendar mr-1"></i> Date & Time</th>
+          <th><i class="fas fa-user-md mr-1"></i> Specialty</th>
+          <th><i class="fas fa-tag mr-1"></i> Visit Type</th>
+          <th><i class="fas fa-circle mr-1"></i> Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td class="font-mono text-xs text-gray-400">{{ a.id }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="avatar w-8 h-8 text-xs" style="background:hsl({{ loop.index * 55 % 360 }},55%,50%)">
+                {{ a.patient_name[0] if a.patient_name else '?' }}
+              </div>
+              <div>
+                <div class="font-semibold text-gray-800 text-sm">{{ a.patient_name }}</div>
+                <div class="text-xs text-gray-400">{{ a.patient_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="font-medium text-gray-800 text-sm">{{ a.date }}</div>
+            <div class="text-xs text-blue-500 font-medium">
+              <i class="fas fa-clock mr-1"></i>{{ a.time }}
+            </div>
+          </td>
+          <td>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style="background:#DBEAFE;color:#1D4ED8">
+              {{ a.specialty or 'General Physician' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-purple">
+              <i class="fas fa-stethoscope text-xs"></i> {{ a.type }}
+            </span>
+          </td>
+          <td>
+            {% if a.status == 'scheduled' %}
+              <span class="badge badge-blue"><i class="fas fa-clock text-xs"></i> Scheduled</span>
+            {% elif a.status == 'completed' %}
+              <span class="badge badge-green"><i class="fas fa-check text-xs"></i> Completed</span>
+            {% else %}
+              <span class="badge badge-red"><i class="fas fa-times text-xs"></i> Cancelled</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.status == 'scheduled' %}
+            <div class="flex gap-1">
+              <form action="/appointments/{{ a.id }}/complete" method="post">
+                <button class="btn-primary text-xs py-1.5 px-2.5">
+                  <i class="fas fa-check"></i>
+                </button>
+              </form>
+              <form action="/appointments/{{ a.id }}/cancel" method="post">
+                <button class="btn-red text-xs py-1.5 px-2.5"
+                  data-confirm="Cancel appointment for {{ a.patient_name }}?">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+            </div>
+            {% else %}
+            <span class="text-xs text-gray-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-16"><!-- 7 cols: ID, Patient, Date, Specialty, Type, Status, Actions -->
+            <i class="fas fa-calendar-times text-4xl text-gray-300 mb-3 block"></i>
+            <p class="text-gray-500 font-medium">No appointments scheduled</p>
+            <button onclick="openModal('bookModal')" class="btn-primary mt-4 text-sm">
+              <i class="fas fa-calendar-plus"></i> Book First Appointment
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Book Appointment Modal -->
+<div id="bookModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-calendar-plus text-blue-500"></i> Book New Appointment
+      </h3>
+      <button onclick="closeModal('bookModal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form action="/appointments/book" method="post" class="modal-body" data-loading>
+      <div class="space-y-4">
+        <div>
+          <label class="form-label"><i class="fas fa-user mr-1 text-green-500"></i> Patient *</label>
+          <select name="patient_id" required class="form-input">
+            <option value="" disabled selected>Select patient...</option>
+            {% for p in patients %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.id }}) — {{ p.age }}y {{ p.gender }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <!-- Doctor auto-set to logged-in doctor -->
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+          <div class="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user-md text-blue-600 text-sm"></i>
+          </div>
+          <div>
+            <div class="text-xs text-blue-400 font-semibold">Assigned Doctor</div>
+            <div class="font-bold text-blue-800 text-sm">{{ doctor.name }}</div>
+          </div>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-user-nurse mr-1 text-indigo-500"></i> Specialty *</label>
+          <select name="specialty" required class="form-input">
+            {% for s in specialty_list %}
+            <option {% if s == doctor_specialty %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label"><i class="fas fa-calendar mr-1 text-purple-500"></i> Date *</label>
+            <input name="date" type="date" required class="form-input"
+              min="{{ today }}"/>
+          </div>
+          <div>
+            <label class="form-label"><i class="fas fa-clock mr-1 text-yellow-500"></i> Time *</label>
+            <input name="time" type="time" required class="form-input"/>
+          </div>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-tag mr-1 text-green-500"></i> Visit Type *</label>
+          <select name="type" required class="form-input">
+            <option>First Consultation</option>
+            <option>Follow-up</option>
+            <option>General Checkup</option>
+            <option>Emergency</option>
+            <option>Prescription Renewal</option>
+            <option>Vaccination</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-thermometer mr-1 text-red-400"></i> Symptoms / Reason</label>
+          <textarea name="symptoms" rows="2" class="form-input"
+                    placeholder="Patient's symptoms, e.g. Fever for 3 days, headache, body pain..."></textarea>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-comment mr-1 text-gray-400"></i> Notes</label>
+          <textarea name="notes" rows="2" class="form-input" placeholder="Any additional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('bookModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-blue"><i class="fas fa-calendar-check"></i> Book Appointment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Reschedule Modal ──────────────────────────────── -->
+<div id="rescheduleModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-clock text-blue-500"></i> Approve & Reschedule
+      </h3>
+      <button onclick="closeModal('rescheduleModal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form id="rescheduleForm" method="post" class="modal-body">
+      <p class="text-sm text-gray-600 mb-4">
+        Approve appointment for <strong id="rs-patient-name"></strong> with optional new date/time.
+      </p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label"><i class="fas fa-calendar mr-1 text-blue-500"></i> New Date (optional)</label>
+          <input id="rs-date" name="new_date" type="date" class="form-input"/>
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-clock mr-1 text-orange-500"></i> New Time (optional)</label>
+          <input id="rs-time" name="new_time" type="time" class="form-input"/>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Leave blank to keep the patient's requested date/time.</p>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('rescheduleModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-primary"><i class="fas fa-check mr-1"></i> Approve</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Reject Modal ──────────────────────────────────── -->
+<div id="rejectModal" class="modal-wrap hidden modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-times-circle text-red-500"></i> Reject Appointment
+      </h3>
+      <button onclick="closeModal('rejectModal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <form id="rejectForm" method="post" class="modal-body">
+      <p class="text-sm text-gray-600 mb-4">
+        Rejecting appointment for <strong id="rj-patient-name"></strong>.
+      </p>
+      <div>
+        <label class="form-label"><i class="fas fa-comment mr-1 text-gray-400"></i> Reason for rejection</label>
+        <textarea name="reason" rows="3" class="form-input"
+                  placeholder="e.g. Slot unavailable, please rebook for next week..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('rejectModal')" class="btn-secondary">Cancel</button>
+        <button type="submit" class="btn-red"><i class="fas fa-times mr-1"></i> Reject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openRescheduleModal(apptId, patientName, date, time) {
+  document.getElementById('rs-patient-name').textContent = patientName;
+  document.getElementById('rs-date').value = date || '';
+  document.getElementById('rs-time').value = time || '';
+  document.getElementById('rescheduleForm').action = '/appointments/' + apptId + '/approve';
+  openModal('rescheduleModal');
+}
+function openRejectModal(apptId, patientName) {
+  document.getElementById('rj-patient-name').textContent = patientName;
+  document.getElementById('rejectForm').action = '/appointments/' + apptId + '/reject';
+  openModal('rejectModal');
+}
+</script>
+{% endblock %}
